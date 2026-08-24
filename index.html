@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#254f3d" />
-  <title>Classroom Library — BUILD V4</title>
+  <title>Classroom Library — BUILD V7</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
 * { box-sizing: border-box; }
 :root {
@@ -206,6 +207,143 @@ footer {
   .card-actions { display:none; }
 }
 
+
+.book-entry-fields {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin:14px 0;
+}
+.book-entry-fields label {
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+}
+.book-entry-fields input {
+  margin-top:5px;
+}
+.book-meta-tags {
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:8px;
+}
+.meta-tag {
+  display:inline-block;
+  padding:4px 7px;
+  border-radius:999px;
+  background:#eef1ec;
+  color:#486057;
+  font-size:10px;
+  font-weight:800;
+}
+.book-card-actions {
+  display:flex;
+  gap:7px;
+  margin-top:10px;
+  flex-wrap:wrap;
+}
+.small-btn {
+  border:1px solid var(--line);
+  background:white;
+  color:var(--ink);
+  border-radius:8px;
+  padding:6px 9px;
+  font-size:11px;
+  font-weight:800;
+}
+.status.lost { background:#f7e0dc; color:#8d3932; }
+.status.damaged { background:#f5ead0; color:#80601f; }
+.status.removed { background:#e7e7e7; color:#626262; }
+
+dialog.book-dialog {
+  width:min(560px,calc(100vw - 28px));
+  border:0;
+  border-radius:18px;
+  padding:0;
+  box-shadow:0 30px 80px rgba(0,0,0,.25);
+  color:var(--ink);
+}
+dialog.book-dialog::backdrop {
+  background:rgba(16,29,24,.48);
+}
+.dialog-inner { padding:24px; }
+.dialog-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:15px;
+  margin-bottom:16px;
+}
+.dialog-head h3 { margin:3px 0 0; font-size:24px; }
+.icon-btn {
+  border:1px solid var(--line);
+  background:white;
+  border-radius:999px;
+  width:34px;
+  height:34px;
+  font-weight:900;
+}
+.dialog-actions {
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+}
+.dialog-actions-right {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.danger {
+  background:var(--red);
+  color:white;
+  border:1px solid var(--red);
+  border-radius:10px;
+  padding:10px 13px;
+  font-weight:800;
+}
+.removed-note {
+  font-size:11px;
+  color:var(--muted);
+  margin-top:5px;
+}
+@media (max-width:700px) {
+  .book-entry-fields { grid-template-columns:1fr; }
+}
+
+
+button.busy {
+  opacity:.7;
+  cursor:wait;
+}
+
+
+.return-feedback { width:min(520px,calc(100vw - 28px)); }
+.return-book-summary {
+  display:flex; gap:14px; align-items:center; padding:14px;
+  background:#f6f3ec; border:1px solid var(--line); border-radius:14px; margin-bottom:18px;
+}
+.return-book-summary img { width:58px; aspect-ratio:2/3; object-fit:cover; border-radius:6px; background:#e9e4da; }
+.finish-choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0 20px; }
+.finish-option {
+  border:2px solid var(--line); background:white; border-radius:14px; padding:15px;
+  font-weight:900; color:var(--ink);
+}
+.finish-option.selected { border-color:var(--green); background:#eaf1ed; color:var(--green); }
+.rating-wrap { padding:16px; background:#fbf9f4; border:1px solid var(--line); border-radius:14px; }
+.star-rating { display:flex; gap:5px; margin-top:8px; }
+.star-btn { border:0; background:transparent; padding:2px; font-size:38px; line-height:1; color:#c8c1b5; }
+.star-btn.selected,.star-btn.preview { color:#b98235; }
+.rating-label { min-height:20px; margin-top:6px; color:var(--muted); font-weight:800; font-size:13px; }
+.rating-display { display:inline-flex; align-items:center; gap:4px; margin-top:7px; font-size:11px; font-weight:800; color:#7c5a24; }
+.rating-display .star { color:#b98235; font-size:14px; }
+.feedback-warning { color:var(--red); font-size:12px; font-weight:800; min-height:18px; margin-top:10px; }
+@media (max-width:600px) { .finish-choice { grid-template-columns:1fr; } }
+
 </style>
 </head>
 <body>
@@ -213,11 +351,12 @@ footer {
 
   <header class="topbar">
     <div>
-      <div class="eyebrow">CLASSROOM CIRCULATION • BUILD V4</div>
-      <h1>Classroom Library <span style="font-size:.42em;vertical-align:middle;padding:5px 9px;border:1px solid rgba(255,255,255,.5);border-radius:999px;">BUILD V4</span></h1>
+      <div class="eyebrow">CLASSROOM CIRCULATION • BUILD V7</div>
+      <h1>Classroom Library <span style="font-size:.42em;vertical-align:middle;padding:5px 9px;border:1px solid rgba(255,255,255,.5);border-radius:999px;">BUILD V7</span></h1>
     </div>
     <div class="top-actions">
-      <button class="ghost" id="exportBtn">Export backup</button>
+      <button class="ghost" id="readingReportBtn">Export reading spreadsheet</button>
+      <button class="ghost" id="exportBtn">Backup JSON</button>
       <label class="ghost file-btn">
         Import backup
         <input id="importFile" type="file" accept=".json,application/json" hidden />
@@ -289,7 +428,10 @@ footer {
               <label>ISBN or classroom ID <input name="isbn" required /></label>
               <label>Title <input name="title" required /></label>
               <label>Author <input name="author" /></label>
-              <label>Categories <input name="categories" placeholder="Fantasy, Animals, Graphic Novel" /></label>
+              <label>Reading level <input name="readingLevel" placeholder="e.g. Grade 3, 520L, Level M" /></label>
+              <label>Genre <input name="genre" placeholder="e.g. Fantasy" /></label>
+              <label>Subgenre <input name="subgenre" placeholder="e.g. Animal Fantasy" /></label>
+              <label>Categories <input name="categories" placeholder="Optional extra tags" /></label>
               <button class="secondary" type="submit">Add manual book</button>
             </form>
           </details>
@@ -317,17 +459,69 @@ footer {
             <h2>Library</h2>
           </div>
           <div class="toolbar">
-            <input id="librarySearch" type="search" placeholder="Search title, author, ISBN…" />
+            <input id="librarySearch" type="search" placeholder="Search title, author, ISBN, genre, level…" />
             <select id="libraryFilter">
-              <option value="all">All books</option>
+              <option value="all">All active books</option>
               <option value="available">Available</option>
               <option value="checked">Checked out</option>
+              <option value="lost">Lost</option>
+              <option value="damaged">Damaged</option>
+              <option value="removed">Removed</option>
             </select>
           </div>
         </div>
         <div id="libraryGrid" class="book-grid"></div>
       </div>
     </section>
+
+    <dialog id="bookEditDialog" class="book-dialog">
+      <div class="dialog-inner">
+        <div class="dialog-head">
+          <div>
+            <div class="eyebrow">MANAGE BOOK</div>
+            <h3 id="editBookTitle">Book</h3>
+          </div>
+          <button type="button" class="icon-btn" id="closeBookDialog" aria-label="Close">×</button>
+        </div>
+
+        <form id="editBookForm" class="form-stack">
+          <input type="hidden" id="editBookId" />
+
+          <label>Reading level
+            <input id="editReadingLevel" placeholder="e.g. Grade 3, 520L, Level M" />
+          </label>
+
+          <label>Genre
+            <input id="editGenre" placeholder="e.g. Fantasy" />
+          </label>
+
+          <label>Subgenre
+            <input id="editSubgenre" placeholder="e.g. Animal Fantasy" />
+          </label>
+
+          <label>Collection status
+            <select id="editCollectionStatus">
+              <option value="active">In library</option>
+              <option value="lost">Lost</option>
+              <option value="damaged">Damaged</option>
+              <option value="removed">Removed from library</option>
+            </select>
+          </label>
+
+          <label id="removalReasonLabel" class="hidden">Removal note
+            <input id="editRemovalReason" placeholder="e.g. Lost, damaged beyond repair, donated" />
+          </label>
+
+          <div class="dialog-actions">
+            <button type="button" class="danger" id="removeBookBtn">Remove from library</button>
+            <div class="dialog-actions-right">
+              <button type="button" class="secondary" id="cancelBookEdit">Cancel</button>
+              <button type="submit" class="primary">Save changes</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </dialog>
 
     <!-- STUDENTS -->
     <section id="view-students" class="view">
@@ -419,23 +613,86 @@ footer {
     </section>
   </main>
 
+
+  <dialog id="returnFeedbackDialog" class="book-dialog return-feedback">
+    <div class="dialog-inner">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">RETURN BOOK</div>
+          <h3>Tell us about the book</h3>
+        </div>
+        <button type="button" class="icon-btn" id="cancelReturnFeedback" aria-label="Cancel">×</button>
+      </div>
+
+      <div id="returnBookSummary" class="return-book-summary"></div>
+
+      <div>
+        <strong>Did you finish this book?</strong>
+        <div class="finish-choice">
+          <button type="button" class="finish-option" data-finished="finished">✓ Finished it</button>
+          <button type="button" class="finish-option" data-finished="not_finished">Didn't finish it</button>
+        </div>
+      </div>
+
+      <div class="rating-wrap">
+        <strong>How would you rate it?</strong>
+        <div class="muted small">Tap a star. You can rate it even if you didn't finish it.</div>
+        <div id="returnStarRating" class="star-rating" aria-label="5 star rating">
+          <button type="button" class="star-btn" data-rating="1" aria-label="1 star">★</button>
+          <button type="button" class="star-btn" data-rating="2" aria-label="2 stars">★</button>
+          <button type="button" class="star-btn" data-rating="3" aria-label="3 stars">★</button>
+          <button type="button" class="star-btn" data-rating="4" aria-label="4 stars">★</button>
+          <button type="button" class="star-btn" data-rating="5" aria-label="5 stars">★</button>
+        </div>
+        <div id="ratingLabel" class="rating-label">No rating selected yet.</div>
+      </div>
+
+      <div id="returnFeedbackWarning" class="feedback-warning"></div>
+
+      <div class="dialog-actions">
+        <button type="button" class="secondary" id="returnWithoutRating">Return without rating</button>
+        <div class="dialog-actions-right">
+          <button type="button" class="primary" id="completeReturnBtn">Complete return</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
   <footer>
-    <span><strong>Classroom Library — BUILD V4 • Single-file edition</strong></span>
-    <span>Data is stored in this browser in this first version.</span>
+    <span><strong>Classroom Library — BUILD V7 • Single-file edition</strong></span>
+    <span>JSON = backup • Excel = finished books, DNF returns & ratings • Data is stored in this browser in this version.</span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Classroom Library BUILD V4 loaded");
-  const BUILD_VERSION = "v4";
+  console.info("Classroom Library BUILD V7 loaded");
+  const BUILD_VERSION = "v7";
   const STORAGE_KEY = "classroomLibraryMVP_v1";
   document.documentElement.dataset.build = BUILD_VERSION;
   const DEFAULT_DUE_DAYS = 14;
 
   const state = loadState();
+
+  // Build v7 migration: preserve older browser data while adding new fields.
+  state.books.forEach(book => {
+    if (book.readingLevel == null) book.readingLevel = "";
+    if (book.genre == null) book.genre = "";
+    if (book.subgenre == null) book.subgenre = "";
+    if (book.collectionStatus == null) book.collectionStatus = "active";
+    if (book.removalReason == null) book.removalReason = "";
+  });
+  state.loans.forEach(loan => {
+    if (loan.completionStatus == null) loan.completionStatus = loan.returnDate ? "legacy_returned" : null;
+    if (loan.rating == null) loan.rating = null;
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
   let recentIds = [];
   let selectedStudentId = null;
+  let pendingReturnLoanId = null;
+  let pendingCompletionStatus = null;
+  let pendingRating = null;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -611,6 +868,11 @@ footer {
       pageCount: exact.number_of_pages_median || null,
       categories: (exact.subject || []).slice(0, 12),
       image: cover,
+      readingLevel: "",
+      genre: "",
+      subgenre: "",
+      collectionStatus: "active",
+      removalReason: "",
       dateAdded: todayISO()
     };
   }
@@ -619,6 +881,30 @@ footer {
     const img = book.image
       ? `<img src="${escapeHTML(book.image)}" alt="">`
       : `<div class="cover-placeholder">NO COVER</div>`;
+
+    const classificationFields = already ? "" : `
+      <div class="book-entry-fields">
+        <label>Reading level
+          <input id="newBookReadingLevel" placeholder="Grade 3, 520L, Level M…" value="${escapeHTML(book.readingLevel || "")}" />
+        </label>
+        <label>Genre
+          <input id="newBookGenre" placeholder="Fantasy" value="${escapeHTML(book.genre || "")}" />
+        </label>
+        <label>Subgenre
+          <input id="newBookSubgenre" placeholder="Animal Fantasy" value="${escapeHTML(book.subgenre || "")}" />
+        </label>
+      </div>`;
+
+    const existingMeta = already ? `
+      <div class="book-meta-tags">
+        ${book.readingLevel ? `<span class="meta-tag">Level: ${escapeHTML(book.readingLevel)}</span>` : ""}
+        ${book.genre ? `<span class="meta-tag">${escapeHTML(book.genre)}</span>` : ""}
+        ${book.subgenre ? `<span class="meta-tag">${escapeHTML(book.subgenre)}</span>` : ""}
+      </div>
+      <div class="book-card-actions">
+        <button id="manageExistingBook" class="secondary" type="button">Manage book</button>
+      </div>` : "";
+
     $("#bookPreview").innerHTML = `
       <div class="book-preview">
         <div>${img}</div>
@@ -627,23 +913,34 @@ footer {
           <h3>${escapeHTML(book.title)}</h3>
           <div>${escapeHTML((book.authors || []).join(", ") || "Unknown author")}</div>
           <div class="meta">${escapeHTML(book.isbn)} ${book.pageCount ? ` • ${book.pageCount} pages` : ""}</div>
-          ${already ? "" : `<button id="confirmAddBook" class="primary">Add to library</button>`}
+          ${classificationFields}
+          ${already ? existingMeta : `<button id="confirmAddBook" class="primary">Add to library</button>`}
         </div>
       </div>
     `;
-    if (!already) {
-      $("#confirmAddBook").onclick = () => {
-        state.books.unshift(book);
-        recentIds.unshift(book.id);
-        recentIds = recentIds.slice(0, 20);
-        save();
-        $("#bookPreview").innerHTML = "";
-        $("#lookupStatus").textContent = `✓ Added: ${book.title}`;
-        $("#scanIsbn").value = "";
-        $("#scanIsbn").focus();
-        toast("Book added");
-      };
+
+    if (already) {
+      $("#manageExistingBook").onclick = () => openBookEditor(book.id);
+      return;
     }
+
+    $("#confirmAddBook").onclick = () => {
+      book.readingLevel = $("#newBookReadingLevel").value.trim();
+      book.genre = $("#newBookGenre").value.trim();
+      book.subgenre = $("#newBookSubgenre").value.trim();
+      book.collectionStatus = "active";
+      book.removalReason = "";
+
+      state.books.unshift(book);
+      recentIds.unshift(book.id);
+      recentIds = recentIds.slice(0, 20);
+      save();
+      $("#bookPreview").innerHTML = "";
+      $("#lookupStatus").textContent = `✓ Added: ${book.title}`;
+      $("#scanIsbn").value = "";
+      $("#scanIsbn").focus();
+      toast("Book added");
+    };
   }
 
   $("#scanBookForm").addEventListener("submit", async e => {
@@ -702,6 +999,11 @@ footer {
       pageCount: null,
       categories: String(fd.get("categories") || "").split(",").map(x => x.trim()).filter(Boolean),
       image: "",
+      readingLevel: String(fd.get("readingLevel") || "").trim(),
+      genre: String(fd.get("genre") || "").trim(),
+      subgenre: String(fd.get("subgenre") || "").trim(),
+      collectionStatus: "active",
+      removalReason: "",
       dateAdded: todayISO()
     };
     state.books.unshift(book);
@@ -710,6 +1012,77 @@ footer {
     e.currentTarget.reset();
     toast("Manual book added");
   });
+
+  function collectionStatusLabel(book, loan) {
+    if (book.collectionStatus === "lost") return { cls: "lost", text: "LOST" };
+    if (book.collectionStatus === "damaged") return { cls: "damaged", text: "DAMAGED" };
+    if (book.collectionStatus === "removed") return { cls: "removed", text: "REMOVED" };
+    return loan ? { cls: "checked", text: "CHECKED OUT" } : { cls: "available", text: "AVAILABLE" };
+  }
+
+  function openBookEditor(bookId) {
+    const book = state.books.find(b => b.id === bookId);
+    if (!book) return;
+
+    $("#editBookId").value = book.id;
+    $("#editBookTitle").textContent = book.title;
+    $("#editReadingLevel").value = book.readingLevel || "";
+    $("#editGenre").value = book.genre || "";
+    $("#editSubgenre").value = book.subgenre || "";
+    $("#editCollectionStatus").value = book.collectionStatus || "active";
+    $("#editRemovalReason").value = book.removalReason || "";
+    updateRemovalReasonVisibility();
+    $("#bookEditDialog").showModal();
+  }
+
+  function updateRemovalReasonVisibility() {
+    const status = $("#editCollectionStatus").value;
+    $("#removalReasonLabel").classList.toggle("hidden", !["lost","damaged","removed"].includes(status));
+  }
+
+  function closeBookEditor() {
+    $("#bookEditDialog").close();
+  }
+
+  $("#editCollectionStatus").addEventListener("change", updateRemovalReasonVisibility);
+  $("#closeBookDialog").addEventListener("click", closeBookEditor);
+  $("#cancelBookEdit").addEventListener("click", closeBookEditor);
+
+  $("#editBookForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const book = state.books.find(b => b.id === $("#editBookId").value);
+    if (!book) return;
+
+    book.readingLevel = $("#editReadingLevel").value.trim();
+    book.genre = $("#editGenre").value.trim();
+    book.subgenre = $("#editSubgenre").value.trim();
+    book.collectionStatus = $("#editCollectionStatus").value;
+    book.removalReason = $("#editRemovalReason").value.trim();
+
+    save();
+    closeBookEditor();
+    toast("Book updated");
+  });
+
+  $("#removeBookBtn").addEventListener("click", () => {
+    const book = state.books.find(b => b.id === $("#editBookId").value);
+    if (!book) return;
+
+    if (!confirm(`Remove "${book.title}" from the active library? Its checkout history will be kept.`)) return;
+
+    book.collectionStatus = "removed";
+    if (!$("#editRemovalReason").value.trim()) {
+      book.removalReason = "Removed from library";
+    } else {
+      book.removalReason = $("#editRemovalReason").value.trim();
+    }
+
+    save();
+    closeBookEditor();
+    toast("Book removed from active library");
+  });
+
+  window.openBookEditor = openBookEditor;
 
   $("#studentForm").addEventListener("submit", e => {
     e.preventDefault();
@@ -780,6 +1153,12 @@ footer {
       $("#checkoutBook").select();
       return;
     }
+    if ((book.collectionStatus || "active") !== "active") {
+      const status = (book.collectionStatus || "removed").replace(/^./, c => c.toUpperCase());
+      $("#checkoutResult").innerHTML = `<div class="result-error">${escapeHTML(book.title)} is marked ${escapeHTML(status)} and cannot be checked out.</div>`;
+      $("#checkoutBook").select();
+      return;
+    }
     const open = currentLoanForBook(book.id);
     if (open) {
       const borrower = state.students.find(s => s.id === open.studentId);
@@ -794,7 +1173,9 @@ footer {
       studentId: student.id,
       checkoutDate: todayISO(),
       dueDate: addDaysISO(state.settings?.dueDays ?? DEFAULT_DUE_DAYS),
-      returnDate: null
+      returnDate: null,
+      completionStatus: null,
+      rating: null
     });
 
     $("#checkoutResult").innerHTML = `<div class="result-success">✓ ${escapeHTML(book.title)} checked out to ${escapeHTML(student.name)}. Due ${fmtDate(state.loans[0].dueDate)}.</div>`;
@@ -802,6 +1183,90 @@ footer {
     save();
     $("#checkoutBook").focus();
   });
+
+  function ratingText(value) {
+    return {
+      1: "1 star — Not for me",
+      2: "2 stars — It was okay",
+      3: "3 stars — I liked it",
+      4: "4 stars — Really good",
+      5: "5 stars — Loved it!"
+    }[value] || "No rating selected yet.";
+  }
+
+  function updateReturnFeedbackUI() {
+    $$(".finish-option").forEach(btn => {
+      btn.classList.toggle("selected", btn.dataset.finished === pendingCompletionStatus);
+    });
+    $$(".star-btn").forEach(btn => {
+      const r = Number(btn.dataset.rating);
+      btn.classList.toggle("selected", pendingRating != null && r <= pendingRating);
+    });
+    $("#ratingLabel").textContent = ratingText(pendingRating);
+  }
+
+  function openReturnFeedback(loan, book, student) {
+    pendingReturnLoanId = loan.id;
+    pendingCompletionStatus = null;
+    pendingRating = null;
+    $("#returnFeedbackWarning").textContent = "";
+
+    const cover = book.image
+      ? `<img src="${escapeHTML(book.image)}" alt="">`
+      : `<div class="cover-placeholder" style="width:58px;aspect-ratio:2/3;">NO COVER</div>`;
+
+    $("#returnBookSummary").innerHTML = `
+      ${cover}
+      <div>
+        <strong>${escapeHTML(book.title)}</strong>
+        <div class="muted">${escapeHTML((book.authors || []).join(", ") || "Unknown author")}</div>
+        ${student ? `<div class="small muted">Borrowed by ${escapeHTML(student.name)}</div>` : ""}
+      </div>
+    `;
+
+    updateReturnFeedbackUI();
+    $("#returnFeedbackDialog").showModal();
+  }
+
+  function resetReturnFeedback() {
+    pendingReturnLoanId = null;
+    pendingCompletionStatus = null;
+    pendingRating = null;
+    $("#returnFeedbackWarning").textContent = "";
+  }
+
+  function finalizeReturn(skipRating = false) {
+    const loan = state.loans.find(l => l.id === pendingReturnLoanId);
+    if (!loan) {
+      $("#returnFeedbackDialog").close();
+      resetReturnFeedback();
+      return;
+    }
+
+    if (!pendingCompletionStatus) {
+      $("#returnFeedbackWarning").textContent = "Choose Finished it or Didn't finish it.";
+      return;
+    }
+    if (!skipRating && pendingRating == null) {
+      $("#returnFeedbackWarning").textContent = "Choose a star rating, or use Return without rating.";
+      return;
+    }
+
+    const book = state.books.find(b => b.id === loan.bookId);
+    const student = state.students.find(s => s.id === loan.studentId);
+    loan.returnDate = todayISO();
+    loan.completionStatus = pendingCompletionStatus;
+    loan.rating = skipRating ? null : pendingRating;
+
+    save();
+    $("#returnFeedbackDialog").close();
+    const finishedText = loan.completionStatus === "finished" ? "Finished" : "Didn't finish";
+    const ratingPart = loan.rating ? ` • ${loan.rating}/5 stars` : "";
+    $("#returnResult").innerHTML = `<div class="result-success">✓ ${escapeHTML(book?.title || "Book")} returned${student ? ` by ${escapeHTML(student.name)}` : ""}. ${finishedText}${ratingPart}.</div>`;
+    $("#returnBook").value = "";
+    resetReturnFeedback();
+    $("#returnBook").focus();
+  }
 
   $("#returnBookForm").addEventListener("submit", e => {
     e.preventDefault();
@@ -817,11 +1282,35 @@ footer {
       $("#returnBook").select();
       return;
     }
-    loan.returnDate = todayISO();
     const student = state.students.find(s => s.id === loan.studentId);
-    $("#returnResult").innerHTML = `<div class="result-success">✓ ${escapeHTML(book.title)} returned${student ? ` by ${escapeHTML(student.name)}` : ""}.</div>`;
+    openReturnFeedback(loan, book, student);
+  });
+
+  $$(".finish-option").forEach(btn => btn.addEventListener("click", () => {
+    pendingCompletionStatus = btn.dataset.finished;
+    $("#returnFeedbackWarning").textContent = "";
+    updateReturnFeedbackUI();
+  }));
+
+  $$(".star-btn").forEach(btn => {
+    btn.addEventListener("mouseenter", () => {
+      const hover = Number(btn.dataset.rating);
+      $$(".star-btn").forEach(star => star.classList.toggle("preview", Number(star.dataset.rating) <= hover));
+    });
+    btn.addEventListener("mouseleave", () => $$(".star-btn").forEach(star => star.classList.remove("preview")));
+    btn.addEventListener("click", () => {
+      pendingRating = Number(btn.dataset.rating);
+      $("#returnFeedbackWarning").textContent = "";
+      updateReturnFeedbackUI();
+    });
+  });
+
+  $("#completeReturnBtn").addEventListener("click", () => finalizeReturn(false));
+  $("#returnWithoutRating").addEventListener("click", () => finalizeReturn(true));
+  $("#cancelReturnFeedback").addEventListener("click", () => {
+    $("#returnFeedbackDialog").close();
+    resetReturnFeedback();
     $("#returnBook").value = "";
-    save();
     $("#returnBook").focus();
   });
 
@@ -835,6 +1324,393 @@ footer {
 
   $("#librarySearch").addEventListener("input", renderLibrary);
   $("#libraryFilter").addEventListener("change", renderLibrary);
+
+  function schoolYearForDate(iso) {
+    const d = iso ? new Date(`${iso}T12:00:00`) : new Date();
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    // Classroom reporting year runs August through July.
+    const start = month >= 8 ? year : year - 1;
+    return `${start}-${String(start + 1).slice(-2)}`;
+  }
+
+  function excelDate(iso) {
+    return iso ? new Date(`${iso}T12:00:00`) : null;
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function styleWorksheetHeader(row) {
+    row.height = 22;
+    row.eachCell(cell => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF254F3D" } };
+      cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+      cell.border = { bottom: { style: "thin", color: { argb: "FFD0C8BC" } } };
+    });
+  }
+
+  function addWorkbookTitle(ws, title, subtitle, lastCol) {
+    ws.mergeCells(`A1:${lastCol}1`);
+    const titleCell = ws.getCell("A1");
+    titleCell.value = title;
+    titleCell.font = { size: 20, bold: true, color: { argb: "FFFFFFFF" } };
+    titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF254F3D" } };
+    titleCell.alignment = { vertical: "middle" };
+    ws.getRow(1).height = 32;
+
+    ws.mergeCells(`A2:${lastCol}2`);
+    const subCell = ws.getCell("A2");
+    subCell.value = subtitle;
+    subCell.font = { italic: true, color: { argb: "FF66766F" } };
+    subCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F0E6" } };
+    subCell.alignment = { wrapText: true, vertical: "middle" };
+    ws.getRow(2).height = 28;
+  }
+
+  function setTableBorders(ws, fromRow, toRow, fromCol, toCol) {
+    for (let r = fromRow; r <= toRow; r++) {
+      for (let c = fromCol; c <= toCol; c++) {
+        const cell = ws.getCell(r, c);
+        cell.border = {
+          bottom: { style: "hair", color: { argb: "FFE1DBD1" } }
+        };
+        cell.alignment = { ...(cell.alignment || {}), vertical: "top" };
+      }
+    }
+  }
+
+  async function exportReadingSpreadsheet() {
+    if (!window.ExcelJS) {
+      toast("Spreadsheet library did not load. Refresh the page and try again.");
+      return;
+    }
+
+    const btn = $("#readingReportBtn");
+    btn.classList.add("busy");
+    btn.disabled = true;
+    const oldText = btn.textContent;
+    btn.textContent = "Building spreadsheet…";
+
+    try {
+      const schoolYear = schoolYearForDate(todayISO());
+      const yearLoans = state.loans.filter(l => schoolYearForDate(l.checkoutDate) === schoolYear);
+      const returnedLoans = yearLoans.filter(l => !!l.returnDate);
+      const finishedLoans = yearLoans.filter(l => l.returnDate && l.completionStatus === "finished");
+      const notFinishedLoans = yearLoans.filter(l => l.returnDate && l.completionStatus === "not_finished");
+      const ratedLoans = returnedLoans.filter(l => Number(l.rating) >= 1 && Number(l.rating) <= 5);
+      const openYearLoans = yearLoans.filter(l => !l.returnDate);
+
+      // Include current roster plus any former student who has activity in this school year.
+      const studentIdsWithActivity = new Set(yearLoans.map(l => l.studentId));
+      const reportStudents = state.students
+        .filter(s => s.active || studentIdsWithActivity.has(s.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      const wb = new ExcelJS.Workbook();
+      wb.creator = "Classroom Library";
+      wb.title = `Classroom Reading Report ${schoolYear}`;
+      wb.subject = "Classroom library circulation and reading report";
+      wb.created = new Date();
+
+      // ---------- CLASS SUMMARY ----------
+      const summary = wb.addWorksheet("Class Summary", {
+        views: [{ state: "frozen", ySplit: 4 }]
+      });
+      summary.properties.defaultRowHeight = 18;
+      addWorkbookTitle(
+        summary,
+        `Classroom Reading Report — ${schoolYear}`,
+        "Books Finished counts books students explicitly marked Finished when returning them.",
+        "G"
+      );
+
+      summary.getCell("A4").value = "Class Snapshot";
+      summary.getCell("A4").font = { size: 14, bold: true, color: { argb: "FF254F3D" } };
+
+      const snapshot = [
+        ["Students", reportStudents.length],
+        ["Books Finished", finishedLoans.length],
+        ["Did Not Finish", notFinishedLoans.length],
+        ["Unique Titles Finished", new Set(finishedLoans.map(l => l.bookId)).size],
+        ["Ratings Submitted", ratedLoans.length],
+        ["Total Checkouts", yearLoans.length],
+        ["Currently Checked Out", openYearLoans.length]
+      ];
+      snapshot.forEach((item, i) => {
+        const row = 5 + i;
+        summary.getCell(row, 1).value = item[0];
+        summary.getCell(row, 1).font = { bold: true, color: { argb: "FF66766F" } };
+        summary.getCell(row, 2).value = item[1];
+        summary.getCell(row, 2).font = { size: 16, bold: true, color: { argb: "FF254F3D" } };
+        summary.getCell(row, 2).alignment = { horizontal: "center" };
+      });
+
+      const studentHeaderRow = 14;
+      summary.getCell(`A${studentHeaderRow - 1}`).value = "Student Reading Summary";
+      summary.getCell(`A${studentHeaderRow - 1}`).font = { size: 14, bold: true, color: { argb: "FF254F3D" } };
+      ["Student", "Books Finished", "Did Not Finish", "Unique Titles Finished", "Total Checkouts", "Currently Out", "Titles Finished"].forEach((h, i) => {
+        summary.getCell(studentHeaderRow, i + 1).value = h;
+      });
+      styleWorksheetHeader(summary.getRow(studentHeaderRow));
+
+      const studentSummaryData = reportStudents.map(student => {
+        const studentLoans = yearLoans.filter(l => l.studentId === student.id);
+        const finished = studentLoans.filter(l => l.returnDate && l.completionStatus === "finished");
+        const dnf = studentLoans.filter(l => l.returnDate && l.completionStatus === "not_finished");
+        const uniqueBookIds = [...new Set(finished.map(l => l.bookId))];
+        const titles = finished
+          .map(l => state.books.find(b => b.id === l.bookId)?.title)
+          .filter(Boolean);
+        const ratings = studentLoans
+          .filter(l => Number(l.rating) >= 1 && Number(l.rating) <= 5)
+          .map(l => Number(l.rating));
+        return {
+          student,
+          finishedCount: finished.length,
+          dnfCount: dnf.length,
+          uniqueCount: uniqueBookIds.length,
+          checkoutCount: studentLoans.length,
+          currentCount: studentLoans.filter(l => !l.returnDate).length,
+          avgRating: ratings.length ? ratings.reduce((a,b) => a+b, 0) / ratings.length : null,
+          titles
+        };
+      });
+
+      studentSummaryData.forEach((x, idx) => {
+        const r = studentHeaderRow + 1 + idx;
+        summary.getCell(r, 1).value = x.student.name;
+        summary.getCell(r, 2).value = x.finishedCount;
+        summary.getCell(r, 3).value = x.dnfCount;
+        summary.getCell(r, 4).value = x.uniqueCount;
+        summary.getCell(r, 5).value = x.checkoutCount;
+        summary.getCell(r, 6).value = x.currentCount;
+        summary.getCell(r, 7).value = x.titles.join("; ");
+        summary.getCell(r, 7).alignment = { wrapText: true, vertical: "top" };
+      });
+      setTableBorders(summary, studentHeaderRow + 1, studentHeaderRow + studentSummaryData.length, 1, 7);
+      summary.autoFilter = `A${studentHeaderRow}:G${studentHeaderRow + studentSummaryData.length}`;
+      summary.columns = [
+        { width: 24 }, { width: 15 }, { width: 15 }, { width: 20 }, { width: 16 }, { width: 14 }, { width: 60 }
+      ];
+
+      // Top books section to the right of snapshot.
+      const popularity = new Map();
+      finishedLoans.forEach(l => popularity.set(l.bookId, (popularity.get(l.bookId) || 0) + 1));
+      const topBooks = [...popularity.entries()]
+        .map(([bookId, count]) => ({ book: state.books.find(b => b.id === bookId), count }))
+        .filter(x => x.book)
+        .sort((a, b) => b.count - a.count || a.book.title.localeCompare(b.book.title))
+        .slice(0, 10);
+
+      summary.getCell("D4").value = "Most Finished Classroom Books";
+      summary.getCell("D4").font = { size: 14, bold: true, color: { argb: "FF254F3D" } };
+      summary.getCell("D5").value = "Title";
+      summary.getCell("E5").value = "Author";
+      summary.getCell("F5").value = "Times Finished";
+      ["D5", "E5", "F5"].forEach(addr => {
+        const cell = summary.getCell(addr);
+        cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF254F3D" } };
+      });
+      topBooks.forEach((x, i) => {
+        const r = 6 + i;
+        summary.getCell(r, 4).value = x.book.title;
+        summary.getCell(r, 5).value = (x.book.authors || []).join(", ");
+        summary.getCell(r, 6).value = x.count;
+      });
+
+      // ---------- STUDENT READING ----------
+      const studentsSheet = wb.addWorksheet("Student Reading", {
+        views: [{ state: "frozen", ySplit: 4 }]
+      });
+      addWorkbookTitle(
+        studentsSheet,
+        `Student Reading — ${schoolYear}`,
+        "One row per student. Books Finished counts books explicitly marked Finished at return.",
+        "I"
+      );
+      const sHeaders = ["Student", "Status", "Books Finished", "Did Not Finish", "Unique Titles Finished", "Average Rating", "Total Checkouts", "Currently Out", "Titles Finished"];
+      sHeaders.forEach((h, i) => studentsSheet.getCell(4, i + 1).value = h);
+      styleWorksheetHeader(studentsSheet.getRow(4));
+      studentSummaryData.forEach((x, idx) => {
+        const r = 5 + idx;
+        studentsSheet.getCell(r, 1).value = x.student.name;
+        studentsSheet.getCell(r, 2).value = x.student.active ? "Active" : "Former";
+        studentsSheet.getCell(r, 3).value = x.finishedCount;
+        studentsSheet.getCell(r, 4).value = x.dnfCount;
+        studentsSheet.getCell(r, 5).value = x.uniqueCount;
+        studentsSheet.getCell(r, 6).value = x.avgRating == null ? "" : Number(x.avgRating.toFixed(2));
+        studentsSheet.getCell(r, 7).value = x.checkoutCount;
+        studentsSheet.getCell(r, 8).value = x.currentCount;
+        studentsSheet.getCell(r, 9).value = x.titles.join("; ");
+        studentsSheet.getCell(r, 9).alignment = { wrapText: true, vertical: "top" };
+      });
+      setTableBorders(studentsSheet, 5, 4 + studentSummaryData.length, 1, 9);
+      studentsSheet.autoFilter = `A4:I${Math.max(4, 4 + studentSummaryData.length)}`;
+      studentsSheet.columns = [
+        { width: 24 }, { width: 11 }, { width: 15 }, { width: 15 }, { width: 20 }, { width: 15 }, { width: 16 }, { width: 14 }, { width: 70 }
+      ];
+
+      // ---------- READING LOG ----------
+      const log = wb.addWorksheet("Reading Log", {
+        views: [{ state: "frozen", ySplit: 4 }]
+      });
+      addWorkbookTitle(
+        log,
+        `Reading Log — ${schoolYear}`,
+        "Every checkout recorded during this school year, including Finished / Didn’t Finish status and student rating.",
+        "M"
+      );
+      const logHeaders = [
+        "Student", "Book Title", "Author", "Reading Level", "Genre", "Subgenre",
+        "ISBN", "Checked Out", "Returned", "Read Status", "Rating", "Loan Status", "School Year"
+      ];
+      logHeaders.forEach((h, i) => log.getCell(4, i + 1).value = h);
+      styleWorksheetHeader(log.getRow(4));
+
+      const logRows = [...yearLoans].sort((a, b) => {
+        const sa = state.students.find(s => s.id === a.studentId)?.name || "";
+        const sb = state.students.find(s => s.id === b.studentId)?.name || "";
+        return sa.localeCompare(sb) || String(a.checkoutDate).localeCompare(String(b.checkoutDate));
+      });
+
+      logRows.forEach((loan, idx) => {
+        const r = 5 + idx;
+        const student = state.students.find(s => s.id === loan.studentId);
+        const book = state.books.find(b => b.id === loan.bookId);
+        let readStatus = "";
+        if (loan.completionStatus === "finished") readStatus = "Finished";
+        if (loan.completionStatus === "not_finished") readStatus = "Didn't Finish";
+        if (loan.completionStatus === "legacy_returned") readStatus = "Legacy Return";
+        const values = [
+          student?.name || "Former student",
+          book?.title || "Unknown book",
+          (book?.authors || []).join(", "),
+          book?.readingLevel || "",
+          book?.genre || "",
+          book?.subgenre || "",
+          book?.isbn || "",
+          excelDate(loan.checkoutDate),
+          excelDate(loan.returnDate),
+          readStatus,
+          loan.rating || "",
+          loan.returnDate ? "Returned" : "Currently Checked Out",
+          schoolYearForDate(loan.checkoutDate)
+        ];
+        values.forEach((v, c) => log.getCell(r, c + 1).value = v);
+        log.getCell(r, 8).numFmt = "mmm d, yyyy";
+        log.getCell(r, 9).numFmt = "mmm d, yyyy";
+      });
+      setTableBorders(log, 5, 4 + logRows.length, 1, 13);
+      log.autoFilter = `A4:M${Math.max(4, 4 + logRows.length)}`;
+      log.columns = [
+        { width: 22 }, { width: 38 }, { width: 26 }, { width: 16 }, { width: 18 },
+        { width: 20 }, { width: 17 }, { width: 15 }, { width: 15 }, { width: 16 },
+        { width: 10 }, { width: 20 }, { width: 12 }
+      ];
+
+      // ---------- BOOK POPULARITY ----------
+      const booksSheet = wb.addWorksheet("Book Popularity", {
+        views: [{ state: "frozen", ySplit: 4 }]
+      });
+      addWorkbookTitle(
+        booksSheet,
+        `Book Popularity — ${schoolYear}`,
+        "Library-level summary of finished books, did-not-finish returns, circulation, and student ratings.",
+        "L"
+      );
+      const bookHeaders = [
+        "Book Title", "Author", "Reading Level", "Genre", "Subgenre", "ISBN",
+        "Times Finished", "Did Not Finish", "Average Rating", "Number of Ratings",
+        "Total Checkouts", "Currently Out"
+      ];
+      bookHeaders.forEach((h, i) => booksSheet.getCell(4, i + 1).value = h);
+      styleWorksheetHeader(booksSheet.getRow(4));
+
+      const activeBooks = state.books.filter(b => (b.collectionStatus || "active") !== "removed");
+      const bookReport = activeBooks.map(book => {
+        const loans = yearLoans.filter(l => l.bookId === book.id);
+        const ratings = loans.filter(l => Number(l.rating) >= 1 && Number(l.rating) <= 5).map(l => Number(l.rating));
+        return {
+          book,
+          finished: loans.filter(l => l.returnDate && l.completionStatus === "finished").length,
+          dnf: loans.filter(l => l.returnDate && l.completionStatus === "not_finished").length,
+          averageRating: ratings.length ? ratings.reduce((a,b) => a+b, 0) / ratings.length : null,
+          ratingCount: ratings.length,
+          checkouts: loans.length,
+          out: loans.filter(l => !l.returnDate).length
+        };
+      }).sort((a, b) => b.finished - a.finished || b.checkouts - a.checkouts || a.book.title.localeCompare(b.book.title));
+
+      bookReport.forEach((x, idx) => {
+        const r = 5 + idx;
+        const vals = [
+          x.book.title,
+          (x.book.authors || []).join(", "),
+          x.book.readingLevel || "",
+          x.book.genre || "",
+          x.book.subgenre || "",
+          x.book.isbn || "",
+          x.finished,
+          x.dnf,
+          x.averageRating == null ? "" : Number(x.averageRating.toFixed(2)),
+          x.ratingCount,
+          x.checkouts,
+          x.out
+        ];
+        vals.forEach((v, c) => booksSheet.getCell(r, c + 1).value = v);
+      });
+      setTableBorders(booksSheet, 5, 4 + bookReport.length, 1, 12);
+      booksSheet.autoFilter = `A4:L${Math.max(4, 4 + bookReport.length)}`;
+      booksSheet.columns = [
+        { width: 38 }, { width: 26 }, { width: 16 }, { width: 18 }, { width: 20 },
+        { width: 17 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 16 },
+        { width: 15 }, { width: 13 }
+      ];
+
+      // General print/display polish.
+      for (const ws of wb.worksheets) {
+        ws.pageSetup = {
+          orientation: "landscape",
+          fitToPage: true,
+          fitToWidth: 1,
+          fitToHeight: 0,
+          margins: { left: 0.3, right: 0.3, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 }
+        };
+        ws.eachRow({ includeEmpty: false }, row => {
+          row.eachCell({ includeEmpty: false }, cell => {
+            cell.font = cell.font || { name: "Aptos", size: 10 };
+          });
+        });
+      }
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+      downloadBlob(blob, `classroom-reading-report-${schoolYear}.xlsx`);
+      toast("Reading spreadsheet exported");
+    } catch (err) {
+      console.error(err);
+      toast(`Spreadsheet export failed: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.classList.remove("busy");
+      btn.textContent = oldText;
+    }
+  }
+
+  $("#readingReportBtn").addEventListener("click", exportReadingSpreadsheet);
 
   $("#exportBtn").addEventListener("click", () => {
     const payload = {
@@ -874,8 +1750,13 @@ footer {
   function renderDashboard() {
     const loans = currentLoans();
     const overdue = loans.filter(l => l.dueDate < todayISO()).length;
-    $("#statBooks").textContent = state.books.length;
-    $("#statAvailable").textContent = state.books.length - loans.length;
+    const activeBooks = state.books.filter(b => (b.collectionStatus || "active") === "active");
+    const activeOpenLoans = loans.filter(l => {
+      const b = state.books.find(book => book.id === l.bookId);
+      return b && (b.collectionStatus || "active") === "active";
+    });
+    $("#statBooks").textContent = activeBooks.length;
+    $("#statAvailable").textContent = activeBooks.length - activeOpenLoans.length;
     $("#statChecked").textContent = loans.length;
     $("#statOverdue").textContent = overdue;
     $("#statStudents").textContent = state.students.filter(s => s.active).length;
@@ -888,16 +1769,21 @@ footer {
       const book = state.books.find(b => b.id === l.bookId);
       const student = state.students.find(s => s.id === l.studentId);
       const isOverdue = !l.returnDate && l.dueDate < todayISO();
+      let completion = "—";
+      if (l.completionStatus === "finished") completion = "Finished";
+      if (l.completionStatus === "not_finished") completion = "Didn't finish";
+      if (l.completionStatus === "legacy_returned") completion = "Returned (old record)";
+      const rating = l.rating ? `${l.rating}/5 ★` : "—";
       return `<tr>
         <td>${escapeHTML(book?.title || "Unknown book")}</td>
         <td>${escapeHTML(student?.name || "Former student")}</td>
         <td>${fmtDate(l.checkoutDate)}</td>
         <td class="${isOverdue ? "overdue" : ""}">${fmtDate(l.dueDate)}</td>
-        ${showReturned ? `<td>${l.returnDate ? fmtDate(l.returnDate) : "Out"}</td>` : ""}
+        ${showReturned ? `<td>${l.returnDate ? fmtDate(l.returnDate) : "Out"}</td><td>${escapeHTML(completion)}</td><td>${rating}</td>` : ""}
       </tr>`;
     }).join("");
     return `<table>
-      <thead><tr><th>BOOK</th><th>STUDENT</th><th>CHECKED OUT</th><th>DUE</th>${showReturned ? "<th>RETURNED</th>" : ""}</tr></thead>
+      <thead><tr><th>BOOK</th><th>STUDENT</th><th>CHECKED OUT</th><th>DUE</th>${showReturned ? "<th>RETURNED</th><th>READ?</th><th>RATING</th>" : ""}</tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   }
@@ -912,27 +1798,71 @@ footer {
       </div>`).join("") : `<div class="empty-state">No books scanned yet.</div>`;
   }
 
+  function bookRatingStats(bookId) {
+    const ratings = state.loans
+      .filter(l => l.bookId === bookId && l.returnDate && Number(l.rating) >= 1 && Number(l.rating) <= 5)
+      .map(l => Number(l.rating));
+    if (!ratings.length) return { count: 0, average: null };
+    return { count: ratings.length, average: ratings.reduce((sum, r) => sum + r, 0) / ratings.length };
+  }
+
+  function ratingBadge(bookId) {
+    const stats = bookRatingStats(bookId);
+    if (!stats.count) return "";
+    return `<div class="rating-display"><span class="star">★</span> ${stats.average.toFixed(1)} <span class="muted">(${stats.count})</span></div>`;
+  }
+
   function renderLibrary() {
     const q = ($("#librarySearch")?.value || "").trim().toLowerCase();
     const filter = $("#libraryFilter")?.value || "all";
+
     const books = state.books.filter(b => {
       const loan = currentLoanForBook(b.id);
-      const hay = `${b.title} ${(b.authors || []).join(" ")} ${b.isbn} ${(b.categories || []).join(" ")}`.toLowerCase();
+      const collectionStatus = b.collectionStatus || "active";
+      const hay = `${b.title} ${(b.authors || []).join(" ")} ${b.isbn} ${(b.categories || []).join(" ")} ${b.readingLevel || ""} ${b.genre || ""} ${b.subgenre || ""} ${b.removalReason || ""}`.toLowerCase();
       const qMatch = !q || hay.includes(q);
-      const statusMatch = filter === "all" || (filter === "available" && !loan) || (filter === "checked" && loan);
+
+      let statusMatch = false;
+      if (filter === "all") statusMatch = collectionStatus === "active";
+      if (filter === "available") statusMatch = collectionStatus === "active" && !loan;
+      if (filter === "checked") statusMatch = collectionStatus === "active" && !!loan;
+      if (filter === "lost") statusMatch = collectionStatus === "lost";
+      if (filter === "damaged") statusMatch = collectionStatus === "damaged";
+      if (filter === "removed") statusMatch = collectionStatus === "removed";
+
       return qMatch && statusMatch;
     });
 
     $("#libraryGrid").innerHTML = books.length ? books.map(b => {
       const loan = currentLoanForBook(b.id);
-      const cover = b.image ? `<img class="book-cover" src="${escapeHTML(b.image)}" alt="">` : `<div class="cover-placeholder">NO COVER</div>`;
+      const cover = b.image
+        ? `<img class="book-cover" src="${escapeHTML(b.image)}" alt="">`
+        : `<div class="cover-placeholder">NO COVER</div>`;
+      const status = collectionStatusLabel(b, loan);
+
+      const tags = [
+        b.readingLevel ? `<span class="meta-tag">Level: ${escapeHTML(b.readingLevel)}</span>` : "",
+        b.genre ? `<span class="meta-tag">${escapeHTML(b.genre)}</span>` : "",
+        b.subgenre ? `<span class="meta-tag">${escapeHTML(b.subgenre)}</span>` : ""
+      ].filter(Boolean).join("");
+
+      const removedNote = (b.collectionStatus && b.collectionStatus !== "active" && b.removalReason)
+        ? `<div class="removed-note">${escapeHTML(b.removalReason)}</div>`
+        : "";
+
       return `<article class="book-card">
         <div>${cover}</div>
         <div>
           <h4>${escapeHTML(b.title)}</h4>
           <p>${escapeHTML((b.authors || []).join(", ") || "Unknown author")}</p>
           <p>${escapeHTML(b.isbn)}</p>
-          <span class="status ${loan ? "checked" : "available"}">${loan ? "CHECKED OUT" : "AVAILABLE"}</span>
+          ${tags ? `<div class="book-meta-tags">${tags}</div>` : ""}
+          <span class="status ${status.cls}">${status.text}</span>
+          ${ratingBadge(b.id)}
+          ${removedNote}
+          <div class="book-card-actions">
+            <button class="small-btn" type="button" onclick="openBookEditor('${b.id}')">Edit / Manage</button>
+          </div>
         </div>
       </article>`;
     }).join("") : `<div class="empty-state">No books match that search.</div>`;
