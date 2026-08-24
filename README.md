@@ -5,7 +5,7 @@ A first working prototype for a classroom library circulation system.
 ## What works now
 
 - Rapid ISBN scanning / entry
-- Google Books metadata lookup
+- Open Library ISBN metadata lookup with Google Books fallback
 - Duplicate ISBN detection
 - Manual book entry fallback
 - Searchable library catalogue
@@ -43,9 +43,13 @@ The app expects the existing ISBN barcode on the book. It accepts ISBN-10 and IS
 ### Students
 Student cards use generated IDs such as `STU-0001`. The barcode contains only that ID, not the student's name.
 
-## Google Books
+## Book metadata lookup
 
-The app queries the Google Books Volumes API by ISBN. No API key is included in this prototype. If usage later requires authenticated quota, the app should move metadata lookup behind a small server-side function rather than exposing a key in public front-end code.
+The app now uses **Open Library first** for ISBN metadata and cover information.
+
+If an ISBN is not found there, it falls back to **Google Books**. This avoids making the normal rapid-scanning workflow dependent on Google's unauthenticated browser quota, which can return HTTP 429 (Too Many Requests).
+
+No API keys are required for this prototype.
 
 ## Recommended next build
 

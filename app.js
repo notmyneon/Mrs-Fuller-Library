@@ -110,15 +110,56 @@
   $$(".tab").forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.view)));
   $$("[data-go]").forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.go)));
 
-  async function lookupBook(isbn) {
+  async function lookupOpenLibrary(isbn) {
+    const key = `ISBN:${isbn}`;
+    const url = `https://openlibrary.org/api/books?bibkeys=${encodeURIComponent(key)}&jscmd=data&format=json`;
+    const response = await fetch(url, { headers: { "Accept": "application/json" } });
+
+    if (!response.ok) {
+      throw new Error(`Open Library returned ${response.status}.`);
+    }
+
+    const data = await response.json();
+    const v = data[key];
+    if (!v) return null;
+
+    const identifiers = v.identifiers || {};
+    const isbn13 = identifiers.isbn_13?.[0];
+    const isbn10 = identifiers.isbn_10?.[0];
+
+    return {
+      id: uid("BOOK"),
+      isbn: normalizeISBN(isbn13 || isbn10 || isbn),
+      scannedIsbn: isbn,
+      googleVolumeId: null,
+      metadataSource: "Open Library",
+      title: v.title || "Untitled",
+      subtitle: v.subtitle || "",
+      authors: (v.authors || []).map(a => a.name).filter(Boolean),
+      publisher: v.publishers?.[0]?.name || "",
+      publishedDate: v.publish_date || "",
+      description: typeof v.excerpts?.[0]?.text === "string" ? v.excerpts[0].text : "",
+      pageCount: v.number_of_pages || null,
+      categories: (v.subjects || []).slice(0, 12).map(s => s.name).filter(Boolean),
+      image: (v.cover?.medium || v.cover?.large || v.cover?.small || v.thumbnail_url || "").replace("http://", "https://"),
+      dateAdded: todayISO()
+    };
+  }
+
+  async function lookupGoogleBooks(isbn) {
     const q = encodeURIComponent(`isbn:${isbn}`);
     const url = `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=5&printType=books`;
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`Google Books returned ${response.status}.`);
+
+    if (!response.ok) {
+      const err = new Error(`Google Books returned ${response.status}.`);
+      err.status = response.status;
+      throw err;
+    }
+
     const data = await response.json();
     if (!data.items?.length) return null;
 
-    // Prefer an exact identifier match if possible.
     const exact = data.items.find(item =>
       (item.volumeInfo?.industryIdentifiers || []).some(x => normalizeISBN(x.identifier) === isbn)
     ) || data.items[0];
@@ -133,6 +174,7 @@
       isbn: normalizeISBN(isbn13 || isbn10 || isbn),
       scannedIsbn: isbn,
       googleVolumeId: exact.id || null,
+      metadataSource: "Google Books",
       title: v.title || "Untitled",
       subtitle: v.subtitle || "",
       authors: v.authors || [],
@@ -144,6 +186,36 @@
       image: (v.imageLinks?.thumbnail || v.imageLinks?.smallThumbnail || "").replace("http://", "https://"),
       dateAdded: todayISO()
     };
+  }
+
+  async function lookupBook(isbn) {
+    // Open Library is the primary lookup source so rapid classroom scanning
+    // is not dependent on Google's unauthenticated/shared browser quota.
+    let openLibraryError = null;
+
+    try {
+      const openLibraryBook = await lookupOpenLibrary(isbn);
+      if (openLibraryBook) return openLibraryBook;
+    } catch (err) {
+      openLibraryError = err;
+      console.warn("Open Library lookup failed:", err);
+    }
+
+    // Google Books remains a useful fallback for ISBNs Open Library does not know.
+    try {
+      return await lookupGoogleBooks(isbn);
+    } catch (err) {
+      if (err.status === 429) {
+        if (openLibraryError) {
+          throw new Error("Both book lookup services are temporarily unavailable. Try the scan again in a moment.");
+        }
+        throw new Error("This ISBN was not found in Open Library, and the Google Books fallback is temporarily rate-limited.");
+      }
+      if (openLibraryError) {
+        throw new Error("Book lookup is temporarily unavailable. Try again in a moment.");
+      }
+      throw err;
+    }
   }
 
   function renderLookupPreview(book, already = false) {
