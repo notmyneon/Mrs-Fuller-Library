@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#254f3d" />
-  <title>Classroom Library — BUILD V8</title>
+  <title>Mrs. Fuller's Library</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
@@ -12,8 +12,8 @@
 :root {
   --ink:#183129;
   --muted:#66766f;
-  --green:#254f3d;
-  --green-2:#3f735d;
+  --green:#68425f;
+  --green-2:#875d7e;
   --cream:#f5f0e6;
   --paper:#fffdf8;
   --line:#ddd7cc;
@@ -93,7 +93,7 @@ input,select,textarea {
   width:100%; border:1px solid #cfc8bd; border-radius:10px;
   padding:12px 13px; background:white; color:var(--ink); outline:none;
 }
-input:focus,select:focus,textarea:focus { border-color:var(--green-2); box-shadow:0 0 0 3px rgba(63,115,93,.12); }
+input:focus,select:focus,textarea:focus { border-color:var(--green-2); box-shadow:0 0 0 3px rgba(135,93,126,.14); }
 .scan-row input,.scan-form>input { font-size:19px; }
 .lookup-status { min-height:22px; font-weight:800; margin:8px 0; }
 .book-preview {
@@ -134,7 +134,7 @@ input:focus,select:focus,textarea:focus { border-color:var(--green-2); box-shado
   display:inline-block; margin-top:9px; padding:4px 7px; border-radius:999px;
   font-size:10px; font-weight:900; letter-spacing:.04em;
 }
-.status.available { background:#e6f0e9; color:#2f634b; }
+.status.available { background:#f0e7ee; color:#68425f; }
 .status.checked { background:#f5e8d6; color:#825b22; }
 .student-add { display:flex; gap:10px; margin:18px 0 6px; }
 .card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:13px; }
@@ -155,13 +155,13 @@ input:focus,select:focus,textarea:focus { border-color:var(--green-2); box-shado
 .mode.active { background:var(--green); color:white; border-color:var(--green); }
 .circulation-box { min-height:270px; }
 .step-badge {
-  display:inline-block; background:#e5eee9; color:var(--green); border-radius:999px;
+  display:inline-block; background:#eee4eb; color:var(--green); border-radius:999px;
   padding:6px 9px; font-size:11px; font-weight:900;
 }
 .selected-box {
   border:1px dashed #c8c1b6; border-radius:12px; padding:15px; margin-top:13px;
 }
-.selected-box.active { border-style:solid; background:#eef4f0; color:var(--ink); }
+.selected-box.active { border-style:solid; background:#f4edf2; color:var(--ink); }
 .result-success,.result-error {
   border-radius:12px; padding:14px; font-weight:800; margin-top:12px;
 }
@@ -176,7 +176,7 @@ td { font-size:14px; }
 .overdue { color:var(--red); font-weight:800; }
 .toast {
   position:fixed; right:20px; bottom:20px; z-index:20; opacity:0; pointer-events:none;
-  background:#19392d; color:white; padding:12px 16px; border-radius:11px;
+  background:#4f3049; color:white; padding:12px 16px; border-radius:11px;
   transform:translateY(10px); transition:.18s; box-shadow:var(--shadow); max-width:360px;
 }
 .toast.show { opacity:1; transform:none; }
@@ -233,7 +233,7 @@ footer {
   padding:4px 7px;
   border-radius:999px;
   background:#eef1ec;
-  color:#486057;
+  color:#685060;
   font-size:10px;
   font-weight:800;
 }
@@ -333,7 +333,7 @@ button.busy {
   border:2px solid var(--line); background:white; border-radius:14px; padding:15px;
   font-weight:900; color:var(--ink);
 }
-.finish-option.selected { border-color:var(--green); background:#eaf1ed; color:var(--green); }
+.finish-option.selected { border-color:var(--green); background:#f1e8ee; color:var(--green); }
 .rating-wrap { padding:16px; background:#fbf9f4; border:1px solid var(--line); border-radius:14px; }
 .star-rating { display:flex; gap:5px; margin-top:8px; }
 .star-btn { border:0; background:transparent; padding:2px; font-size:38px; line-height:1; color:#c8c1b5; }
@@ -470,12 +470,12 @@ button.busy {
   box-shadow:0 8px 18px rgba(31,49,41,.10);
 }
 .library-card.selected-student {
-  box-shadow:0 0 0 3px rgba(37,79,61,.16);
+  box-shadow:0 0 0 3px rgba(104,66,95,.16);
 }
 .student-history-status {
   font-weight:800;
 }
-.student-history-status.finished { color:#2f634b; }
+.student-history-status.finished { color:#68425f; }
 .student-history-status.dnf { color:#825b22; }
 .student-history-status.out { color:#4d6076; }
 @media (max-width:900px) {
@@ -495,8 +495,8 @@ button.busy {
 
   <header class="topbar">
     <div>
-      <div class="eyebrow">CLASSROOM CIRCULATION • BUILD V8</div>
-      <h1>Classroom Library <span style="font-size:.42em;vertical-align:middle;padding:5px 9px;border:1px solid rgba(255,255,255,.5);border-radius:999px;">BUILD V8</span></h1>
+      <div class="eyebrow">CLASSROOM CIRCULATION</div>
+      <h1>Mrs. Fuller's Library</h1>
     </div>
     <div class="top-actions">
       <button class="ghost" id="readingReportBtn">Export reading spreadsheet</button>
@@ -821,15 +821,14 @@ button.busy {
   </dialog>
 
   <footer>
-    <span><strong>Classroom Library — BUILD V8 • Single-file edition</strong></span>
-    <span>JSON = backup • Excel = finished books, DNF returns & ratings • Data is stored in this browser in this version.</span>
+    <span><strong>Mrs. Fuller's Library • Version 9</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Classroom Library BUILD V8 loaded");
-  const BUILD_VERSION = "v8";
+  console.info("Mrs. Fuller's Library v9 loaded");
+  const BUILD_VERSION = "v9";
   const STORAGE_KEY = "classroomLibraryMVP_v1";
   document.documentElement.dataset.build = BUILD_VERSION;
   const DEFAULT_DUE_DAYS = 14;
@@ -1523,7 +1522,7 @@ button.busy {
     row.height = 22;
     row.eachCell(cell => {
       cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF254F3D" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF68425F" } };
       cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
       cell.border = { bottom: { style: "thin", color: { argb: "FFD0C8BC" } } };
     });
@@ -1534,14 +1533,14 @@ button.busy {
     const titleCell = ws.getCell("A1");
     titleCell.value = title;
     titleCell.font = { size: 20, bold: true, color: { argb: "FFFFFFFF" } };
-    titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF254F3D" } };
+    titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF68425F" } };
     titleCell.alignment = { vertical: "middle" };
     ws.getRow(1).height = 32;
 
     ws.mergeCells(`A2:${lastCol}2`);
     const subCell = ws.getCell("A2");
     subCell.value = subtitle;
-    subCell.font = { italic: true, color: { argb: "FF66766F" } };
+    subCell.font = { italic: true, color: { argb: "FF6F5A69" } };
     subCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F0E6" } };
     subCell.alignment = { wrapText: true, vertical: "middle" };
     ws.getRow(2).height = 28;
@@ -1587,7 +1586,7 @@ button.busy {
         .sort((a, b) => a.name.localeCompare(b.name));
 
       const wb = new ExcelJS.Workbook();
-      wb.creator = "Classroom Library";
+      wb.creator = "Mrs. Fuller's Library";
       wb.title = `Classroom Reading Report ${schoolYear}`;
       wb.subject = "Classroom library circulation and reading report";
       wb.created = new Date();
@@ -1605,7 +1604,7 @@ button.busy {
       );
 
       summary.getCell("A4").value = "Class Snapshot";
-      summary.getCell("A4").font = { size: 14, bold: true, color: { argb: "FF254F3D" } };
+      summary.getCell("A4").font = { size: 14, bold: true, color: { argb: "FF68425F" } };
 
       const snapshot = [
         ["Students", reportStudents.length],
@@ -1619,15 +1618,15 @@ button.busy {
       snapshot.forEach((item, i) => {
         const row = 5 + i;
         summary.getCell(row, 1).value = item[0];
-        summary.getCell(row, 1).font = { bold: true, color: { argb: "FF66766F" } };
+        summary.getCell(row, 1).font = { bold: true, color: { argb: "FF6F5A69" } };
         summary.getCell(row, 2).value = item[1];
-        summary.getCell(row, 2).font = { size: 16, bold: true, color: { argb: "FF254F3D" } };
+        summary.getCell(row, 2).font = { size: 16, bold: true, color: { argb: "FF68425F" } };
         summary.getCell(row, 2).alignment = { horizontal: "center" };
       });
 
       const studentHeaderRow = 14;
       summary.getCell(`A${studentHeaderRow - 1}`).value = "Student Reading Summary";
-      summary.getCell(`A${studentHeaderRow - 1}`).font = { size: 14, bold: true, color: { argb: "FF254F3D" } };
+      summary.getCell(`A${studentHeaderRow - 1}`).font = { size: 14, bold: true, color: { argb: "FF68425F" } };
       ["Student", "Books Finished", "Did Not Finish", "Unique Titles Finished", "Total Checkouts", "Currently Out", "Titles Finished"].forEach((h, i) => {
         summary.getCell(studentHeaderRow, i + 1).value = h;
       });
@@ -1683,14 +1682,14 @@ button.busy {
         .slice(0, 10);
 
       summary.getCell("D4").value = "Most Finished Classroom Books";
-      summary.getCell("D4").font = { size: 14, bold: true, color: { argb: "FF254F3D" } };
+      summary.getCell("D4").font = { size: 14, bold: true, color: { argb: "FF68425F" } };
       summary.getCell("D5").value = "Title";
       summary.getCell("E5").value = "Author";
       summary.getCell("F5").value = "Times Finished";
       ["D5", "E5", "F5"].forEach(addr => {
         const cell = summary.getCell(addr);
         cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF254F3D" } };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF68425F" } };
       });
       topBooks.forEach((x, i) => {
         const r = 6 + i;
@@ -1868,7 +1867,7 @@ button.busy {
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       });
-      downloadBlob(blob, `classroom-reading-report-${schoolYear}.xlsx`);
+      downloadBlob(blob, `mrs-fullers-library-reading-report-${schoolYear}.xlsx`);
       toast("Reading spreadsheet exported");
     } catch (err) {
       console.error(err);
@@ -1891,7 +1890,7 @@ button.busy {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `classroom-library-backup-${todayISO()}.json`;
+    a.download = `mrs-fullers-library-backup-${todayISO()}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
@@ -2211,7 +2210,7 @@ button.busy {
                role="button"
                tabindex="0"
                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectStudentProfile('${s.id}', true);}">
-        <div class="eyebrow">CLASSROOM LIBRARY CARD</div>
+        <div class="eyebrow">MRS. FULLER'S LIBRARY CARD</div>
         <h4>${escapeHTML(s.name)}</h4>
         <div class="card-id">${escapeHTML(s.code)}</div>
         <svg class="barcode" data-code="${escapeHTML(s.code)}"></svg>
