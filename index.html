@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#254f3d" />
+  <title>Classroom Library</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+</head>
+<body>
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">CLASSROOM CIRCULATION</div>
+      <h1>Classroom Library</h1>
+    </div>
+    <div class="top-actions">
+      <button class="ghost" id="exportBtn">Export backup</button>
+      <label class="ghost file-btn">
+        Import backup
+        <input id="importFile" type="file" accept=".json,application/json" hidden />
+      </label>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Main navigation">
+    <button class="tab active" data-view="dashboard">Dashboard</button>
+    <button class="tab" data-view="scan">Scan / Add</button>
+    <button class="tab" data-view="library">Library</button>
+    <button class="tab" data-view="students">Students</button>
+    <button class="tab" data-view="circulation">Circulation</button>
+  </nav>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section id="view-dashboard" class="view active">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">TODAY</div>
+          <h2>Your classroom library at a glance</h2>
+          <p class="muted">Scan books in, issue student cards, and check books in and out.</p>
+        </div>
+        <button class="primary" data-go="scan">Start scanning books</button>
+      </div>
+
+      <div class="stats">
+        <article class="stat"><span id="statBooks">0</span><small>Books</small></article>
+        <article class="stat"><span id="statAvailable">0</span><small>Available</small></article>
+        <article class="stat"><span id="statChecked">0</span><small>Checked out</small></article>
+        <article class="stat"><span id="statOverdue">0</span><small>Overdue</small></article>
+        <article class="stat"><span id="statStudents">0</span><small>Students</small></article>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Currently checked out</h3>
+            <p class="muted">Books that have not yet been returned.</p>
+          </div>
+        </div>
+        <div id="dashboardLoans" class="table-wrap"></div>
+      </div>
+    </section>
+
+    <!-- SCAN -->
+    <section id="view-scan" class="view">
+      <div class="grid-two">
+        <div class="panel scan-panel">
+          <div class="eyebrow">RAPID ENTRY</div>
+          <h2>Add books by ISBN</h2>
+          <p class="muted">Click the box once, then scan the publisher barcode on each book. Most USB/Bluetooth barcode scanners act like a keyboard and press Enter automatically.</p>
+
+          <form id="scanBookForm" class="scan-form">
+            <label for="scanIsbn">ISBN barcode</label>
+            <div class="scan-row">
+              <input id="scanIsbn" inputmode="numeric" autocomplete="off" placeholder="Scan or type ISBN" />
+              <button class="primary" type="submit">Look up</button>
+            </div>
+          </form>
+
+          <div id="lookupStatus" class="lookup-status"></div>
+          <div id="bookPreview"></div>
+
+          <details class="manual">
+            <summary>Book not found? Add it manually</summary>
+            <form id="manualBookForm" class="form-stack">
+              <label>ISBN or classroom ID <input name="isbn" required /></label>
+              <label>Title <input name="title" required /></label>
+              <label>Author <input name="author" /></label>
+              <label>Categories <input name="categories" placeholder="Fantasy, Animals, Graphic Novel" /></label>
+              <button class="secondary" type="submit">Add manual book</button>
+            </form>
+          </details>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="eyebrow">THIS SESSION</div>
+              <h3>Recently added</h3>
+            </div>
+            <strong id="sessionCount">0 books</strong>
+          </div>
+          <div id="recentBooks" class="recent-list empty-state">No books scanned yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIBRARY -->
+    <section id="view-library" class="view">
+      <div class="panel">
+        <div class="panel-head wrap">
+          <div>
+            <div class="eyebrow">CATALOGUE</div>
+            <h2>Library</h2>
+          </div>
+          <div class="toolbar">
+            <input id="librarySearch" type="search" placeholder="Search title, author, ISBN…" />
+            <select id="libraryFilter">
+              <option value="all">All books</option>
+              <option value="available">Available</option>
+              <option value="checked">Checked out</option>
+            </select>
+          </div>
+        </div>
+        <div id="libraryGrid" class="book-grid"></div>
+      </div>
+    </section>
+
+    <!-- STUDENTS -->
+    <section id="view-students" class="view">
+      <div class="grid-two students-layout">
+        <div class="panel">
+          <div class="eyebrow">ROSTER</div>
+          <h2>Students</h2>
+          <form id="studentForm" class="student-add">
+            <input id="studentName" placeholder="Student name" autocomplete="off" required />
+            <button class="primary" type="submit">Add student</button>
+          </form>
+          <p class="muted small">Student barcodes contain only a generated classroom ID, not the student's name.</p>
+
+          <details class="manual">
+            <summary>Paste a class list</summary>
+            <form id="bulkStudentForm" class="form-stack">
+              <label>One student per line
+                <textarea id="studentBulk" rows="8" placeholder="Avery&#10;Maya&#10;Noah"></textarea>
+              </label>
+              <button class="secondary" type="submit">Add class list</button>
+            </form>
+          </details>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head wrap">
+            <div>
+              <h3>Library cards</h3>
+              <p class="muted">Print these on cardstock or labels.</p>
+            </div>
+            <button id="printCardsBtn" class="secondary">Print cards</button>
+          </div>
+          <div id="studentCards" class="card-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CIRCULATION -->
+    <section id="view-circulation" class="view">
+      <div class="mode-switch">
+        <button class="mode active" data-mode="checkout">Check out</button>
+        <button class="mode" data-mode="return">Return</button>
+      </div>
+
+      <div id="checkoutMode" class="grid-two">
+        <div class="panel circulation-box">
+          <div class="step-badge">1</div>
+          <h2>Scan student card</h2>
+          <p class="muted">Scan the student's classroom library card.</p>
+          <form id="checkoutStudentForm" class="scan-form">
+            <input id="checkoutStudent" autocomplete="off" placeholder="Scan student card" />
+            <button class="primary" type="submit">Select</button>
+          </form>
+          <div id="selectedStudent" class="selected-box muted">No student selected.</div>
+        </div>
+
+        <div class="panel circulation-box">
+          <div class="step-badge">2</div>
+          <h2>Scan book</h2>
+          <p class="muted">Use the ISBN barcode already printed on the book.</p>
+          <form id="checkoutBookForm" class="scan-form">
+            <input id="checkoutBook" autocomplete="off" placeholder="Scan book ISBN" disabled />
+            <button class="primary" id="checkoutBookBtn" type="submit" disabled>Check out</button>
+          </form>
+          <div id="checkoutResult"></div>
+        </div>
+      </div>
+
+      <div id="returnMode" class="panel circulation-box hidden">
+        <div class="step-badge">RETURN</div>
+        <h2>Scan returned books</h2>
+        <p class="muted">No student card is needed. Scan each returned book one after another.</p>
+        <form id="returnBookForm" class="scan-form wide">
+          <input id="returnBook" autocomplete="off" placeholder="Scan book ISBN" />
+          <button class="primary" type="submit">Return</button>
+        </form>
+        <div id="returnResult"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3>Loan history</h3>
+            <p class="muted">Latest activity first.</p>
+          </div>
+        </div>
+        <div id="loanHistory" class="table-wrap"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Classroom Library MVP</span>
+    <span>Data is stored in this browser in this first version.</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
