@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#254f3d" />
-  <title>Classroom Library — BUILD V7</title>
+  <title>Classroom Library — BUILD V8</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <style>
@@ -344,6 +344,150 @@ button.busy {
 .feedback-warning { color:var(--red); font-size:12px; font-weight:800; min-height:18px; margin-top:10px; }
 @media (max-width:600px) { .finish-choice { grid-template-columns:1fr; } }
 
+
+.student-profile-panel {
+  margin-top:18px;
+}
+.student-profile-toolbar {
+  display:flex;
+  align-items:end;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.student-profile-toolbar label {
+  min-width:min(100%,320px);
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+}
+.student-profile-toolbar select {
+  margin-top:5px;
+}
+.student-profile-empty {
+  padding:36px 10px;
+  color:var(--muted);
+  text-align:center;
+}
+.student-profile-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:18px;
+  flex-wrap:wrap;
+  padding-bottom:18px;
+  border-bottom:1px solid var(--line);
+}
+.student-profile-head h3 {
+  margin:3px 0 3px;
+  font-size:28px;
+}
+.student-code {
+  font:700 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color:var(--muted);
+}
+.student-mini-stats {
+  display:grid;
+  grid-template-columns:repeat(5,minmax(110px,1fr));
+  gap:10px;
+  margin:18px 0;
+}
+.student-mini-stat {
+  border:1px solid var(--line);
+  background:#faf8f2;
+  border-radius:13px;
+  padding:13px;
+}
+.student-mini-stat strong {
+  display:block;
+  font-size:23px;
+  color:var(--green);
+}
+.student-mini-stat span {
+  display:block;
+  margin-top:2px;
+  font-size:11px;
+  font-weight:800;
+  color:var(--muted);
+}
+.student-record-section {
+  margin-top:22px;
+}
+.student-record-section h4 {
+  margin:0 0 10px;
+  font-size:18px;
+}
+.student-current-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:10px;
+}
+.student-current-book {
+  display:grid;
+  grid-template-columns:48px 1fr;
+  gap:11px;
+  align-items:start;
+  border:1px solid var(--line);
+  background:white;
+  border-radius:12px;
+  padding:11px;
+}
+.student-current-book img {
+  width:48px;
+  aspect-ratio:2/3;
+  object-fit:cover;
+  border-radius:5px;
+  background:#ece8df;
+}
+.student-current-book .cover-placeholder {
+  width:48px;
+  font-size:8px;
+}
+.student-current-book strong {
+  display:block;
+  line-height:1.25;
+}
+.student-current-book .due {
+  font-size:12px;
+  color:var(--muted);
+  margin-top:5px;
+}
+.student-current-book .due.overdue {
+  color:var(--red);
+}
+.profile-link {
+  border:0;
+  background:none;
+  color:var(--green);
+  font-weight:900;
+  padding:5px;
+}
+.library-card.selectable {
+  cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease;
+}
+.library-card.selectable:hover {
+  transform:translateY(-1px);
+  box-shadow:0 8px 18px rgba(31,49,41,.10);
+}
+.library-card.selected-student {
+  box-shadow:0 0 0 3px rgba(37,79,61,.16);
+}
+.student-history-status {
+  font-weight:800;
+}
+.student-history-status.finished { color:#2f634b; }
+.student-history-status.dnf { color:#825b22; }
+.student-history-status.out { color:#4d6076; }
+@media (max-width:900px) {
+  .student-mini-stats { grid-template-columns:repeat(2,1fr); }
+}
+@media (max-width:550px) {
+  .student-mini-stats { grid-template-columns:1fr 1fr; }
+}
+@media print {
+  #studentProfilePanel { display:none !important; }
+}
+
 </style>
 </head>
 <body>
@@ -351,8 +495,8 @@ button.busy {
 
   <header class="topbar">
     <div>
-      <div class="eyebrow">CLASSROOM CIRCULATION • BUILD V7</div>
-      <h1>Classroom Library <span style="font-size:.42em;vertical-align:middle;padding:5px 9px;border:1px solid rgba(255,255,255,.5);border-radius:999px;">BUILD V7</span></h1>
+      <div class="eyebrow">CLASSROOM CIRCULATION • BUILD V8</div>
+      <h1>Classroom Library <span style="font-size:.42em;vertical-align:middle;padding:5px 9px;border:1px solid rgba(255,255,255,.5);border-radius:999px;">BUILD V8</span></h1>
     </div>
     <div class="top-actions">
       <button class="ghost" id="readingReportBtn">Export reading spreadsheet</button>
@@ -550,12 +694,30 @@ button.busy {
           <div class="panel-head wrap">
             <div>
               <h3>Library cards</h3>
-              <p class="muted">Print these on cardstock or labels.</p>
+              <p class="muted">Click a student card to view that student's library record.</p>
             </div>
             <button id="printCardsBtn" class="secondary">Print cards</button>
           </div>
           <div id="studentCards" class="card-grid"></div>
         </div>
+      </div>
+
+      <div id="studentProfilePanel" class="panel student-profile-panel">
+        <div class="panel-head wrap">
+          <div>
+            <div class="eyebrow">STUDENT RECORD</div>
+            <h2 style="margin-bottom:4px;">Borrowing history</h2>
+            <p class="muted">See what a student currently has and everything they have previously borrowed.</p>
+          </div>
+          <div class="student-profile-toolbar">
+            <label>Select student
+              <select id="studentProfileSelect">
+                <option value="">Choose a student…</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div id="studentProfileContent" class="student-profile-empty">Select a student to view their library record.</div>
       </div>
     </section>
 
@@ -659,22 +821,22 @@ button.busy {
   </dialog>
 
   <footer>
-    <span><strong>Classroom Library — BUILD V7 • Single-file edition</strong></span>
+    <span><strong>Classroom Library — BUILD V8 • Single-file edition</strong></span>
     <span>JSON = backup • Excel = finished books, DNF returns & ratings • Data is stored in this browser in this version.</span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Classroom Library BUILD V7 loaded");
-  const BUILD_VERSION = "v7";
+  console.info("Classroom Library BUILD V8 loaded");
+  const BUILD_VERSION = "v8";
   const STORAGE_KEY = "classroomLibraryMVP_v1";
   document.documentElement.dataset.build = BUILD_VERSION;
   const DEFAULT_DUE_DAYS = 14;
 
   const state = loadState();
 
-  // Build v7 migration: preserve older browser data while adding new fields.
+  // Build v8 migration: preserve older browser data while adding new fields.
   state.books.forEach(book => {
     if (book.readingLevel == null) book.readingLevel = "";
     if (book.genre == null) book.genre = "";
@@ -693,6 +855,7 @@ button.busy {
   let pendingReturnLoanId = null;
   let pendingCompletionStatus = null;
   let pendingRating = null;
+  let selectedProfileStudentId = null;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -1115,12 +1278,19 @@ button.busy {
     if (!student) return;
     if (!confirm(`Remove ${student.name} from the active roster? Loan history will be kept.`)) return;
     student.active = false;
+    if (selectedProfileStudentId === id) selectedProfileStudentId = null;
     save();
   }
 
   window.deleteStudent = deleteStudent;
 
   $("#printCardsBtn").addEventListener("click", () => window.print());
+
+  $("#studentProfileSelect").addEventListener("change", e => {
+    selectedProfileStudentId = e.target.value || null;
+    renderStudents();
+    renderStudentProfile();
+  });
 
   $("#checkoutStudentForm").addEventListener("submit", e => {
     e.preventDefault();
@@ -1868,15 +2038,189 @@ button.busy {
     }).join("") : `<div class="empty-state">No books match that search.</div>`;
   }
 
+  function selectStudentProfile(studentId, shouldScroll = false) {
+    const student = state.students.find(s => s.id === studentId && s.active);
+    selectedProfileStudentId = student ? student.id : null;
+    renderStudents();
+    renderStudentProfile();
+
+    if (shouldScroll && selectedProfileStudentId) {
+      $("#studentProfilePanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function studentCompletionLabel(loan) {
+    if (!loan.returnDate) return { text: "Currently out", cls: "out" };
+    if (loan.completionStatus === "finished") return { text: "Finished", cls: "finished" };
+    if (loan.completionStatus === "not_finished") return { text: "Didn't finish", cls: "dnf" };
+    if (loan.completionStatus === "legacy_returned") return { text: "Returned", cls: "" };
+    return { text: "Returned", cls: "" };
+  }
+
+  function renderStudentProfile() {
+    const select = $("#studentProfileSelect");
+    const content = $("#studentProfileContent");
+    if (!select || !content) return;
+
+    const active = state.students
+      .filter(s => s.active)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const previousValue = selectedProfileStudentId || "";
+    select.innerHTML = `<option value="">Choose a student…</option>` +
+      active.map(s => `<option value="${s.id}">${escapeHTML(s.name)}</option>`).join("");
+    select.value = active.some(s => s.id === previousValue) ? previousValue : "";
+
+    const student = active.find(s => s.id === selectedProfileStudentId);
+    if (!student) {
+      content.className = "student-profile-empty";
+      content.innerHTML = "Select a student to view their library record.";
+      return;
+    }
+
+    const loans = state.loans
+      .filter(l => l.studentId === student.id)
+      .sort((a, b) =>
+        String(b.checkoutDate || "").localeCompare(String(a.checkoutDate || "")) ||
+        String(b.id).localeCompare(String(a.id))
+      );
+
+    const current = loans.filter(l => !l.returnDate);
+    const returned = loans.filter(l => !!l.returnDate);
+    const finished = returned.filter(l => l.completionStatus === "finished");
+    const dnf = returned.filter(l => l.completionStatus === "not_finished");
+    const ratings = returned
+      .map(l => Number(l.rating))
+      .filter(r => Number.isFinite(r) && r >= 1 && r <= 5);
+    const avgRating = ratings.length
+      ? (ratings.reduce((sum, r) => sum + r, 0) / ratings.length).toFixed(1)
+      : "—";
+
+    const currentHTML = current.length ? `
+      <div class="student-current-grid">
+        ${current.map(loan => {
+          const book = state.books.find(b => b.id === loan.bookId);
+          const overdue = loan.dueDate && loan.dueDate < todayISO();
+          const cover = book?.image
+            ? `<img src="${escapeHTML(book.image)}" alt="">`
+            : `<div class="cover-placeholder">NO COVER</div>`;
+          return `
+            <article class="student-current-book">
+              ${cover}
+              <div>
+                <strong>${escapeHTML(book?.title || "Unknown book")}</strong>
+                <div class="muted small">${escapeHTML((book?.authors || []).join(", "))}</div>
+                <div class="due ${overdue ? "overdue" : ""}">
+                  Checked out ${fmtDate(loan.checkoutDate)}<br>
+                  Due ${fmtDate(loan.dueDate)}${overdue ? " • OVERDUE" : ""}
+                </div>
+              </div>
+            </article>`;
+        }).join("")}
+      </div>` :
+      `<div class="empty-state">No books currently checked out.</div>`;
+
+    const historyHTML = returned.length ? `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>BOOK</th>
+              <th>CHECKED OUT</th>
+              <th>RETURNED</th>
+              <th>READ?</th>
+              <th>RATING</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${returned.map(loan => {
+              const book = state.books.find(b => b.id === loan.bookId);
+              const completion = studentCompletionLabel(loan);
+              return `
+                <tr>
+                  <td>
+                    <strong>${escapeHTML(book?.title || "Unknown book")}</strong>
+                    <div class="muted small">${escapeHTML((book?.authors || []).join(", "))}</div>
+                  </td>
+                  <td>${fmtDate(loan.checkoutDate)}</td>
+                  <td>${fmtDate(loan.returnDate)}</td>
+                  <td><span class="student-history-status ${completion.cls}">${escapeHTML(completion.text)}</span></td>
+                  <td>${loan.rating ? `${loan.rating}/5 ★` : "—"}</td>
+                </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>` :
+      `<div class="empty-state">No previous returns yet.</div>`;
+
+    content.className = "";
+    content.innerHTML = `
+      <div class="student-profile-head">
+        <div>
+          <div class="eyebrow">LIBRARY RECORD</div>
+          <h3>${escapeHTML(student.name)}</h3>
+          <div class="student-code">${escapeHTML(student.code)}</div>
+        </div>
+      </div>
+
+      <div class="student-mini-stats">
+        <div class="student-mini-stat">
+          <strong>${current.length}</strong>
+          <span>CURRENTLY OUT</span>
+        </div>
+        <div class="student-mini-stat">
+          <strong>${finished.length}</strong>
+          <span>BOOKS FINISHED</span>
+        </div>
+        <div class="student-mini-stat">
+          <strong>${dnf.length}</strong>
+          <span>DID NOT FINISH</span>
+        </div>
+        <div class="student-mini-stat">
+          <strong>${loans.length}</strong>
+          <span>TOTAL CHECKOUTS</span>
+        </div>
+        <div class="student-mini-stat">
+          <strong>${avgRating}</strong>
+          <span>AVG. RATING GIVEN</span>
+        </div>
+      </div>
+
+      <section class="student-record-section">
+        <h4>Currently checked out</h4>
+        ${currentHTML}
+      </section>
+
+      <section class="student-record-section">
+        <h4>Previous borrowing history</h4>
+        ${historyHTML}
+      </section>
+    `;
+  }
+
+  window.selectStudentProfile = selectStudentProfile;
+
   function renderStudents() {
-    const active = state.students.filter(s => s.active);
+    const active = state.students
+      .filter(s => s.active)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
     $("#studentCards").innerHTML = active.length ? active.map(s => `
-      <article class="library-card">
+      <article class="library-card selectable ${selectedProfileStudentId === s.id ? "selected-student" : ""}"
+               onclick="selectStudentProfile('${s.id}', true)"
+               role="button"
+               tabindex="0"
+               onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectStudentProfile('${s.id}', true);}">
         <div class="eyebrow">CLASSROOM LIBRARY CARD</div>
         <h4>${escapeHTML(s.name)}</h4>
         <div class="card-id">${escapeHTML(s.code)}</div>
         <svg class="barcode" data-code="${escapeHTML(s.code)}"></svg>
-        <div class="card-actions"><button class="danger-link" onclick="deleteStudent('${s.id}')">Remove</button></div>
+        <div class="card-actions">
+          <button class="profile-link" type="button"
+                  onclick="event.stopPropagation();selectStudentProfile('${s.id}', true)">View history</button>
+          <button class="danger-link" type="button"
+                  onclick="event.stopPropagation();deleteStudent('${s.id}')">Remove</button>
+        </div>
       </article>`).join("") : `<div class="empty-state">Add students to create library cards.</div>`;
 
     if (window.JsBarcode) {
@@ -1888,6 +2232,8 @@ button.busy {
         } catch {}
       });
     }
+
+    renderStudentProfile();
   }
 
   function renderHistory() {
