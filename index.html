@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#254f3d" />
+  <meta name="theme-color" content="#68425f" />
   <title>Mrs. Fuller's Library</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { box-sizing: border-box; }
 :root {
@@ -488,10 +489,153 @@ button.busy {
   #studentProfilePanel { display:none !important; }
 }
 
+
+body.logged-out > .topbar,
+body.logged-out > .tabs,
+body.logged-out > main,
+body.logged-out > footer,
+body.logged-out > dialog {
+  display:none;
+}
+body:not(.logged-out) #authScreen {
+  display:none;
+}
+.auth-screen {
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(135,93,126,.14), transparent 34%),
+    linear-gradient(145deg,#f7f1f5,#eee5eb);
+}
+.auth-card {
+  width:min(430px,100%);
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:32px;
+  box-shadow:0 24px 70px rgba(70,44,65,.14);
+}
+.auth-card h1 {
+  margin:7px 0 5px;
+  font-size:34px;
+}
+.auth-mark {
+  width:54px;
+  height:54px;
+  display:grid;
+  place-items:center;
+  border-radius:16px;
+  margin-bottom:18px;
+  background:var(--green);
+  color:white;
+  font-weight:900;
+  letter-spacing:.05em;
+}
+.auth-form {
+  margin-top:22px;
+}
+.auth-message {
+  min-height:22px;
+  margin-top:12px;
+  color:var(--red);
+  font-weight:800;
+  font-size:13px;
+}
+.auth-note {
+  margin:18px 0 0;
+  padding-top:16px;
+  border-top:1px solid var(--line);
+  color:var(--muted);
+  font-size:12px;
+}
+.cloud-status {
+  display:inline-flex;
+  align-items:center;
+  padding:8px 11px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.24);
+  background:rgba(255,255,255,.08);
+  color:rgba(255,255,255,.9);
+  font-size:11px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.cloud-status::before {
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  margin-right:6px;
+  background:#d9c3d3;
+}
+.cloud-status.syncing::before {
+  animation:pulse 1s infinite alternate;
+}
+.cloud-status.error::before {
+  background:#f2a39a;
+}
+@keyframes pulse {
+  from { opacity:.3; }
+  to { opacity:1; }
+}
+.settings-account {
+  display:grid;
+  gap:8px;
+}
+.cloud-detail {
+  background:#f5eef3;
+  border:1px solid #e1d3dd;
+  border-radius:12px;
+  padding:12px;
+  color:#68425f;
+  font-size:12px;
+  margin:5px 0 8px;
+}
+.danger-zone {
+  margin-top:24px;
+  padding-top:20px;
+  border-top:1px solid var(--line);
+}
+.danger-zone h4 {
+  margin:5px 0 6px;
+  font-size:19px;
+}
+.danger-zone .danger {
+  margin:8px 0;
+}
+button:disabled {
+  opacity:.55;
+  cursor:not-allowed;
+}
+
 </style>
 </head>
-<body>
+<body class="logged-out">
   <div id="toast" class="toast" aria-live="polite"></div>
+
+  <section id="authScreen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-mark">MF</div>
+      <div class="eyebrow">PRIVATE CLASSROOM LIBRARY</div>
+      <h1>Mrs. Fuller's Library</h1>
+      <p class="muted">Sign in to access the library database.</p>
+
+      <form id="loginForm" class="form-stack auth-form">
+        <label>Email
+          <input id="loginEmail" type="email" autocomplete="username" required />
+        </label>
+        <label>Password
+          <input id="loginPassword" type="password" autocomplete="current-password" required />
+        </label>
+        <button id="loginBtn" class="primary" type="submit">Sign in</button>
+      </form>
+      <div id="loginMessage" class="auth-message"></div>
+      <p class="auth-note">Library records are stored in the protected Supabase database, not in this browser.</p>
+    </div>
+  </section>
+
 
   <header class="topbar">
     <div>
@@ -499,8 +643,10 @@ button.busy {
       <h1>Mrs. Fuller's Library</h1>
     </div>
     <div class="top-actions">
+      <span id="cloudStatus" class="cloud-status">Cloud database</span>
       <button class="ghost" id="readingReportBtn">Export reading spreadsheet</button>
       <button class="ghost" id="exportBtn">Backup JSON</button>
+      <button class="ghost" id="teacherSettingsBtn">Teacher Settings</button>
       <label class="ghost file-btn">
         Import backup
         <input id="importFile" type="file" accept=".json,application/json" hidden />
@@ -820,34 +966,77 @@ button.busy {
     </div>
   </dialog>
 
+
+  <dialog id="teacherSettingsDialog" class="book-dialog settings-dialog">
+    <div class="dialog-inner">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">TEACHER SETTINGS</div>
+          <h3>Library settings</h3>
+        </div>
+        <button type="button" class="icon-btn" id="closeTeacherSettings" aria-label="Close">×</button>
+      </div>
+
+      <div class="settings-account">
+        <strong>Signed in</strong>
+        <div id="settingsUserEmail" class="muted"></div>
+        <div class="cloud-detail">Books, students, loans, reading status, and ratings are stored in Supabase.</div>
+        <button type="button" class="secondary" id="signOutBtn">Sign out</button>
+      </div>
+
+      <div class="danger-zone">
+        <div class="eyebrow">DANGER ZONE</div>
+        <h4>Reset all library data</h4>
+        <p class="muted">Permanently deletes every book, student, checkout, return, rating, and reading-history record in your cloud database.</p>
+        <button type="button" class="danger" id="resetAllDataBtn">Reset All Library Data</button>
+        <div class="small muted">This action requires two separate confirmations.</div>
+      </div>
+    </div>
+  </dialog>
+
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 9</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 10</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v9 loaded");
-  const BUILD_VERSION = "v9";
-  const STORAGE_KEY = "classroomLibraryMVP_v1";
-  document.documentElement.dataset.build = BUILD_VERSION;
+  console.info("Mrs. Fuller's Library v10 cloud build loaded");
+  const BUILD_VERSION = "v10";
   const DEFAULT_DUE_DAYS = 14;
+  const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
 
-  const state = loadState();
+  document.documentElement.dataset.build = BUILD_VERSION;
 
-  // Build v8 migration: preserve older browser data while adding new fields.
-  state.books.forEach(book => {
-    if (book.readingLevel == null) book.readingLevel = "";
-    if (book.genre == null) book.genre = "";
-    if (book.subgenre == null) book.subgenre = "";
-    if (book.collectionStatus == null) book.collectionStatus = "active";
-    if (book.removalReason == null) book.removalReason = "";
-  });
-  state.loans.forEach(loan => {
-    if (loan.completionStatus == null) loan.completionStatus = loan.returnDate ? "legacy_returned" : null;
-    if (loan.rating == null) loan.rating = null;
-  });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if (!window.supabase?.createClient) {
+    document.querySelector("#loginMessage").textContent =
+      "The Supabase library did not load. Refresh the page and try again.";
+    return;
+  }
+
+  const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    }
+  );
+
+  // The old prototype used this key for the actual database.
+  // The cloud build intentionally removes it so stale test records cannot reappear.
+  localStorage.removeItem("classroomLibraryMVP_v1");
+
+  const state = {
+    books: [],
+    students: [],
+    loans: [],
+    settings: { dueDays: DEFAULT_DUE_DAYS }
+  };
 
   let recentIds = [];
   let selectedStudentId = null;
@@ -855,24 +1044,11 @@ button.busy {
   let pendingCompletionStatus = null;
   let pendingRating = null;
   let selectedProfileStudentId = null;
+  let activeUser = null;
+  let initializedUserId = null;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => [...document.querySelectorAll(sel)];
-
-  function loadState() {
-    const fallback = { books: [], students: [], loans: [], settings: { dueDays: DEFAULT_DUE_DAYS } };
-    try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return parsed && parsed.books && parsed.students && parsed.loans ? parsed : fallback;
-    } catch {
-      return fallback;
-    }
-  }
-
-  function save() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    renderAll();
-  }
 
   function cleanCode(value) {
     return String(value || "").trim().replace(/[^0-9A-Za-z-]/g, "");
@@ -887,14 +1063,13 @@ button.busy {
     return v.length === 10 || v.length === 13;
   }
 
-  function uid(prefix) {
-    const random = crypto.getRandomValues(new Uint32Array(2));
-    return `${prefix}-${random[0].toString(36).toUpperCase()}${random[1].toString(36).toUpperCase()}`.slice(0, 18);
+  function isUUID(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || ""));
   }
 
   function nextStudentCode() {
     const used = new Set(state.students.map(s => s.code));
-    let n = state.students.length + 1;
+    let n = 1;
     let code;
     do {
       code = `STU-${String(n).padStart(4, "0")}`;
@@ -915,7 +1090,9 @@ button.busy {
 
   function fmtDate(iso) {
     if (!iso) return "—";
-    return new Date(iso + "T12:00:00").toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    return new Date(iso + "T12:00:00").toLocaleDateString(undefined, {
+      year:"numeric", month:"short", day:"numeric"
+    });
   }
 
   function escapeHTML(s) {
@@ -934,7 +1111,9 @@ button.busy {
 
   function bookByCode(raw) {
     const code = normalizeISBN(raw);
-    return state.books.find(b => normalizeISBN(b.isbn) === code) || null;
+    return state.books.find(b =>
+      normalizeISBN(b.isbn) === code || normalizeISBN(b.scannedIsbn) === code
+    ) || null;
   }
 
   function studentByCode(raw) {
@@ -947,7 +1126,15 @@ button.busy {
     el.textContent = message;
     el.classList.add("show");
     clearTimeout(toast.t);
-    toast.t = setTimeout(() => el.classList.remove("show"), 2200);
+    toast.t = setTimeout(() => el.classList.remove("show"), 2400);
+  }
+
+  function setCloudStatus(text, mode = "") {
+    const el = $("#cloudStatus");
+    if (!el) return;
+    el.textContent = text;
+    el.classList.toggle("syncing", mode === "syncing");
+    el.classList.toggle("error", mode === "error");
   }
 
   function showView(name) {
@@ -959,6 +1146,219 @@ button.busy {
 
   $$(".tab").forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.view)));
   $$("[data-go]").forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.go)));
+
+  function dbBookToApp(row) {
+    return {
+      id: row.id,
+      isbn: row.isbn || "",
+      scannedIsbn: row.scanned_isbn || row.isbn || "",
+      openLibraryKey: row.open_library_key || null,
+      title: row.title || "Untitled",
+      subtitle: row.subtitle || "",
+      authors: Array.isArray(row.authors) ? row.authors : [],
+      publisher: row.publisher || "",
+      publishedDate: row.published_date || "",
+      description: row.description || "",
+      pageCount: row.page_count ?? null,
+      categories: Array.isArray(row.categories) ? row.categories : [],
+      image: row.image_url || "",
+      readingLevel: row.reading_level || "",
+      genre: row.genre || "",
+      subgenre: row.subgenre || "",
+      collectionStatus: row.collection_status || "active",
+      removalReason: row.removal_reason || "",
+      dateAdded: row.date_added || todayISO()
+    };
+  }
+
+  function appBookToDb(book, includeId = false) {
+    const row = {
+      isbn: normalizeISBN(book.isbn),
+      scanned_isbn: normalizeISBN(book.scannedIsbn || book.isbn),
+      open_library_key: book.openLibraryKey || null,
+      title: book.title || "Untitled",
+      subtitle: book.subtitle || "",
+      authors: book.authors || [],
+      publisher: book.publisher || "",
+      published_date: book.publishedDate || "",
+      description: book.description || "",
+      page_count: book.pageCount ?? null,
+      categories: book.categories || [],
+      image_url: book.image || "",
+      reading_level: book.readingLevel || "",
+      genre: book.genre || "",
+      subgenre: book.subgenre || "",
+      collection_status: book.collectionStatus || "active",
+      removal_reason: book.removalReason || "",
+      date_added: book.dateAdded || todayISO()
+    };
+    if (includeId && isUUID(book.id)) row.id = book.id;
+    return row;
+  }
+
+  function dbStudentToApp(row) {
+    return {
+      id: row.id,
+      code: row.card_code,
+      name: row.display_name,
+      active: row.active !== false,
+      dateAdded: row.date_added || todayISO()
+    };
+  }
+
+  function appStudentToDb(student, includeId = false) {
+    const row = {
+      card_code: student.code,
+      display_name: student.name,
+      active: student.active !== false,
+      date_added: student.dateAdded || todayISO()
+    };
+    if (includeId && isUUID(student.id)) row.id = student.id;
+    return row;
+  }
+
+  function dbLoanToApp(row) {
+    return {
+      id: row.id,
+      bookId: row.book_id,
+      studentId: row.student_id,
+      checkoutDate: row.checkout_date,
+      dueDate: row.due_date,
+      returnDate: row.return_date,
+      completionStatus: row.completion_status,
+      rating: row.rating
+    };
+  }
+
+  function appLoanToDb(loan, includeId = false) {
+    const row = {
+      book_id: loan.bookId,
+      student_id: loan.studentId,
+      checkout_date: loan.checkoutDate || todayISO(),
+      due_date: loan.dueDate,
+      return_date: loan.returnDate || null,
+      completion_status: loan.completionStatus || null,
+      rating: loan.rating ?? null
+    };
+    if (includeId && isUUID(loan.id)) row.id = loan.id;
+    return row;
+  }
+
+  async function fetchAllRows(table, orderColumn = "created_at") {
+    const pageSize = 1000;
+    let from = 0;
+    const rows = [];
+    while (true) {
+      const { data, error } = await db
+        .from(table)
+        .select("*")
+        .order(orderColumn, { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (error) throw error;
+      rows.push(...(data || []));
+      if (!data || data.length < pageSize) break;
+      from += pageSize;
+    }
+    return rows;
+  }
+
+  async function loadRemoteState() {
+    setCloudStatus("Syncing…", "syncing");
+    const [books, students, loans] = await Promise.all([
+      fetchAllRows("books"),
+      fetchAllRows("students"),
+      fetchAllRows("loans")
+    ]);
+    state.books = books.map(dbBookToApp);
+    state.students = students.map(dbStudentToApp);
+    state.loans = loans.map(dbLoanToApp);
+    state.settings = { dueDays: DEFAULT_DUE_DAYS };
+    setCloudStatus("Cloud database");
+    renderAll();
+  }
+
+  async function refreshRemoteState(message = "") {
+    try {
+      await loadRemoteState();
+      if (message) toast(message);
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Sync error", "error");
+      toast(`Database error: ${err.message}`);
+      throw err;
+    }
+  }
+
+  async function startAuthenticatedApp(user) {
+    activeUser = user;
+    if (initializedUserId === user.id && !document.body.classList.contains("logged-out")) return;
+    initializedUserId = user.id;
+    $("#settingsUserEmail").textContent = user.email || "";
+    document.body.classList.remove("logged-out");
+    try {
+      await loadRemoteState();
+    } catch (err) {
+      setCloudStatus("Sync error", "error");
+      toast(`Could not load library: ${err.message}`);
+    }
+  }
+
+  function showLoggedOut() {
+    activeUser = null;
+    initializedUserId = null;
+    state.books = [];
+    state.students = [];
+    state.loans = [];
+    recentIds = [];
+    selectedStudentId = null;
+    selectedProfileStudentId = null;
+    document.body.classList.add("logged-out");
+    $("#loginPassword").value = "";
+    $("#loginMessage").textContent = "";
+  }
+
+  $("#loginForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = $("#loginEmail").value.trim();
+    const password = $("#loginPassword").value;
+    const btn = $("#loginBtn");
+    $("#loginMessage").textContent = "";
+    btn.disabled = true;
+    btn.textContent = "Signing in…";
+    try {
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (!data.user) throw new Error("Sign in did not return a user.");
+      await startAuthenticatedApp(data.user);
+    } catch (err) {
+      $("#loginMessage").textContent = err.message || "Sign in failed.";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Sign in";
+    }
+  });
+
+  async function initializeAuth() {
+    const { data, error } = await db.auth.getSession();
+    if (error) {
+      $("#loginMessage").textContent = error.message;
+      return;
+    }
+    if (data.session?.user) {
+      await startAuthenticatedApp(data.session.user);
+    } else {
+      showLoggedOut();
+    }
+  }
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") {
+      showLoggedOut();
+    } else if (event === "SIGNED_IN" && session?.user) {
+      setTimeout(() => startAuthenticatedApp(session.user), 0);
+    }
+  });
 
   async function lookupBook(isbn) {
     // Build v3: one Open Library Search API request per scan.
@@ -1013,7 +1413,7 @@ button.busy {
       "";
 
     return {
-      id: uid("BOOK"),
+      id: null,
       isbn: normalizeISBN(
         identifiers.find(x => x === isbn) || isbn13 || isbn10 || isbn
       ),
@@ -1086,22 +1486,45 @@ button.busy {
       return;
     }
 
-    $("#confirmAddBook").onclick = () => {
+    $("#confirmAddBook").onclick = async () => {
       book.readingLevel = $("#newBookReadingLevel").value.trim();
       book.genre = $("#newBookGenre").value.trim();
       book.subgenre = $("#newBookSubgenre").value.trim();
       book.collectionStatus = "active";
       book.removalReason = "";
 
-      state.books.unshift(book);
-      recentIds.unshift(book.id);
-      recentIds = recentIds.slice(0, 20);
-      save();
-      $("#bookPreview").innerHTML = "";
-      $("#lookupStatus").textContent = `✓ Added: ${book.title}`;
-      $("#scanIsbn").value = "";
-      $("#scanIsbn").focus();
-      toast("Book added");
+      const button = $("#confirmAddBook");
+      button.disabled = true;
+      button.textContent = "Adding…";
+      setCloudStatus("Saving…", "syncing");
+
+      try {
+        const { data, error } = await db
+          .from("books")
+          .insert(appBookToDb(book))
+          .select("*")
+          .single();
+        if (error) throw error;
+
+        const savedBook = dbBookToApp(data);
+        state.books.unshift(savedBook);
+        recentIds.unshift(savedBook.id);
+        recentIds = recentIds.slice(0, 20);
+        renderAll();
+
+        $("#bookPreview").innerHTML = "";
+        $("#lookupStatus").textContent = `✓ Added: ${savedBook.title}`;
+        $("#scanIsbn").value = "";
+        $("#scanIsbn").focus();
+        setCloudStatus("Cloud database");
+        toast("Book added");
+      } catch (err) {
+        console.error(err);
+        setCloudStatus("Save error", "error");
+        toast(`Could not add book: ${err.message}`);
+        button.disabled = false;
+        button.textContent = "Add to library";
+      }
     };
   }
 
@@ -1139,7 +1562,7 @@ button.busy {
     }
   });
 
-  $("#manualBookForm").addEventListener("submit", e => {
+  $("#manualBookForm").addEventListener("submit", async e => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const isbn = normalizeISBN(fd.get("isbn"));
@@ -1147,11 +1570,12 @@ button.busy {
       toast("That book is already in the library.");
       return;
     }
+
     const book = {
-      id: uid("BOOK"),
+      id: null,
       isbn,
       scannedIsbn: isbn,
-      googleVolumeId: null,
+      openLibraryKey: null,
       title: String(fd.get("title")).trim(),
       subtitle: "",
       authors: String(fd.get("author") || "").split(",").map(x => x.trim()).filter(Boolean),
@@ -1168,11 +1592,28 @@ button.busy {
       removalReason: "",
       dateAdded: todayISO()
     };
-    state.books.unshift(book);
-    recentIds.unshift(book.id);
-    save();
-    e.currentTarget.reset();
-    toast("Manual book added");
+
+    const submit = e.currentTarget.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    setCloudStatus("Saving…", "syncing");
+    try {
+      const { data, error } = await db.from("books").insert(appBookToDb(book)).select("*").single();
+      if (error) throw error;
+      const savedBook = dbBookToApp(data);
+      state.books.unshift(savedBook);
+      recentIds.unshift(savedBook.id);
+      recentIds = recentIds.slice(0, 20);
+      e.currentTarget.reset();
+      setCloudStatus("Cloud database");
+      renderAll();
+      toast("Manual book added");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      toast(`Could not add book: ${err.message}`);
+    } finally {
+      submit.disabled = false;
+    }
   });
 
   function collectionStatusLabel(book, loan) {
@@ -1210,64 +1651,155 @@ button.busy {
   $("#closeBookDialog").addEventListener("click", closeBookEditor);
   $("#cancelBookEdit").addEventListener("click", closeBookEditor);
 
-  $("#editBookForm").addEventListener("submit", e => {
+  $("#editBookForm").addEventListener("submit", async e => {
     e.preventDefault();
     const book = state.books.find(b => b.id === $("#editBookId").value);
     if (!book) return;
 
-    book.readingLevel = $("#editReadingLevel").value.trim();
-    book.genre = $("#editGenre").value.trim();
-    book.subgenre = $("#editSubgenre").value.trim();
-    book.collectionStatus = $("#editCollectionStatus").value;
-    book.removalReason = $("#editRemovalReason").value.trim();
+    const changes = {
+      reading_level: $("#editReadingLevel").value.trim(),
+      genre: $("#editGenre").value.trim(),
+      subgenre: $("#editSubgenre").value.trim(),
+      collection_status: $("#editCollectionStatus").value,
+      removal_reason: $("#editRemovalReason").value.trim()
+    };
 
-    save();
-    closeBookEditor();
-    toast("Book updated");
+    setCloudStatus("Saving…", "syncing");
+    try {
+      const { data, error } = await db
+        .from("books")
+        .update(changes)
+        .eq("id", book.id)
+        .select("*")
+        .single();
+      if (error) throw error;
+
+      const index = state.books.findIndex(b => b.id === book.id);
+      state.books[index] = dbBookToApp(data);
+      setCloudStatus("Cloud database");
+      renderAll();
+      closeBookEditor();
+      toast("Book updated");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      toast(`Could not update book: ${err.message}`);
+    }
   });
 
-  $("#removeBookBtn").addEventListener("click", () => {
+  $("#removeBookBtn").addEventListener("click", async () => {
     const book = state.books.find(b => b.id === $("#editBookId").value);
     if (!book) return;
 
     if (!confirm(`Remove "${book.title}" from the active library? Its checkout history will be kept.`)) return;
 
-    book.collectionStatus = "removed";
-    if (!$("#editRemovalReason").value.trim()) {
-      book.removalReason = "Removed from library";
-    } else {
-      book.removalReason = $("#editRemovalReason").value.trim();
-    }
+    const removalReason = $("#editRemovalReason").value.trim() || "Removed from library";
+    setCloudStatus("Saving…", "syncing");
+    try {
+      const { data, error } = await db
+        .from("books")
+        .update({
+          collection_status: "removed",
+          removal_reason: removalReason
+        })
+        .eq("id", book.id)
+        .select("*")
+        .single();
+      if (error) throw error;
 
-    save();
-    closeBookEditor();
-    toast("Book removed from active library");
+      const index = state.books.findIndex(b => b.id === book.id);
+      state.books[index] = dbBookToApp(data);
+      setCloudStatus("Cloud database");
+      renderAll();
+      closeBookEditor();
+      toast("Book removed from active library");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      toast(`Could not remove book: ${err.message}`);
+    }
   });
 
   window.openBookEditor = openBookEditor;
 
-  $("#studentForm").addEventListener("submit", e => {
+  $("#studentForm").addEventListener("submit", async e => {
     e.preventDefault();
     const name = $("#studentName").value.trim();
     if (!name) return;
-    state.students.push({ id: uid("STUDENT"), code: nextStudentCode(), name, active: true, dateAdded: todayISO() });
-    $("#studentName").value = "";
-    save();
-    toast("Student added");
+
+    const student = {
+      id: null,
+      code: nextStudentCode(),
+      name,
+      active: true,
+      dateAdded: todayISO()
+    };
+
+    setCloudStatus("Saving…", "syncing");
+    try {
+      const { data, error } = await db
+        .from("students")
+        .insert(appStudentToDb(student))
+        .select("*")
+        .single();
+      if (error) throw error;
+
+      state.students.push(dbStudentToApp(data));
+      $("#studentName").value = "";
+      setCloudStatus("Cloud database");
+      renderAll();
+      toast("Student added");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      toast(`Could not add student: ${err.message}`);
+    }
   });
 
-  $("#bulkStudentForm").addEventListener("submit", e => {
+  $("#bulkStudentForm").addEventListener("submit", async e => {
     e.preventDefault();
-    const names = $("#studentBulk").value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-    names.forEach(name => {
-      state.students.push({ id: uid("STUDENT"), code: nextStudentCode(), name, active: true, dateAdded: todayISO() });
-    });
-    $("#studentBulk").value = "";
-    save();
-    toast(`${names.length} student${names.length === 1 ? "" : "s"} added`);
+    const names = $("#studentBulk").value
+      .split(/\r?\n/)
+      .map(x => x.trim())
+      .filter(Boolean);
+    if (!names.length) return;
+
+    const used = new Set(state.students.map(s => s.code));
+    let n = 1;
+    function nextCodeForBatch() {
+      let code;
+      do {
+        code = `STU-${String(n).padStart(4, "0")}`;
+        n++;
+      } while (used.has(code));
+      used.add(code);
+      return code;
+    }
+
+    const rows = names.map(name => appStudentToDb({
+      code: nextCodeForBatch(),
+      name,
+      active: true,
+      dateAdded: todayISO()
+    }));
+
+    setCloudStatus("Saving…", "syncing");
+    try {
+      const { data, error } = await db.from("students").insert(rows).select("*");
+      if (error) throw error;
+      state.students.push(...(data || []).map(dbStudentToApp));
+      $("#studentBulk").value = "";
+      setCloudStatus("Cloud database");
+      renderAll();
+      toast(`${names.length} student${names.length === 1 ? "" : "s"} added`);
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      toast(`Could not add class list: ${err.message}`);
+    }
   });
 
-  function deleteStudent(id) {
+  async function deleteStudent(id) {
     const hasOpenLoan = state.loans.some(l => l.studentId === id && !l.returnDate);
     if (hasOpenLoan) {
       toast("Return this student's books before removing them.");
@@ -1276,9 +1808,28 @@ button.busy {
     const student = state.students.find(s => s.id === id);
     if (!student) return;
     if (!confirm(`Remove ${student.name} from the active roster? Loan history will be kept.`)) return;
-    student.active = false;
-    if (selectedProfileStudentId === id) selectedProfileStudentId = null;
-    save();
+
+    setCloudStatus("Saving…", "syncing");
+    try {
+      const { data, error } = await db
+        .from("students")
+        .update({ active: false })
+        .eq("id", id)
+        .select("*")
+        .single();
+      if (error) throw error;
+
+      const index = state.students.findIndex(s => s.id === id);
+      state.students[index] = dbStudentToApp(data);
+      if (selectedProfileStudentId === id) selectedProfileStudentId = null;
+      setCloudStatus("Cloud database");
+      renderAll();
+      toast("Student removed from active roster");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      toast(`Could not remove student: ${err.message}`);
+    }
   }
 
   window.deleteStudent = deleteStudent;
@@ -1308,7 +1859,7 @@ button.busy {
     $("#checkoutBook").focus();
   });
 
-  $("#checkoutBookForm").addEventListener("submit", e => {
+  $("#checkoutBookForm").addEventListener("submit", async e => {
     e.preventDefault();
     const student = state.students.find(s => s.id === selectedStudentId);
     const book = bookByCode($("#checkoutBook").value);
@@ -1336,8 +1887,8 @@ button.busy {
       return;
     }
 
-    state.loans.unshift({
-      id: uid("LOAN"),
+    const loan = {
+      id: null,
       bookId: book.id,
       studentId: student.id,
       checkoutDate: todayISO(),
@@ -1345,12 +1896,31 @@ button.busy {
       returnDate: null,
       completionStatus: null,
       rating: null
-    });
+    };
 
-    $("#checkoutResult").innerHTML = `<div class="result-success">✓ ${escapeHTML(book.title)} checked out to ${escapeHTML(student.name)}. Due ${fmtDate(state.loans[0].dueDate)}.</div>`;
-    $("#checkoutBook").value = "";
-    save();
-    $("#checkoutBook").focus();
+    setCloudStatus("Saving…", "syncing");
+    try {
+      const { data, error } = await db
+        .from("loans")
+        .insert(appLoanToDb(loan))
+        .select("*")
+        .single();
+      if (error) throw error;
+
+      const savedLoan = dbLoanToApp(data);
+      state.loans.unshift(savedLoan);
+      setCloudStatus("Cloud database");
+      renderAll();
+      $("#checkoutResult").innerHTML =
+        `<div class="result-success">✓ ${escapeHTML(book.title)} checked out to ${escapeHTML(student.name)}. Due ${fmtDate(savedLoan.dueDate)}.</div>`;
+      $("#checkoutBook").value = "";
+      $("#checkoutBook").focus();
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      $("#checkoutResult").innerHTML =
+        `<div class="result-error">Could not check out book: ${escapeHTML(err.message)}</div>`;
+    }
   });
 
   function ratingText(value) {
@@ -1404,7 +1974,7 @@ button.busy {
     $("#returnFeedbackWarning").textContent = "";
   }
 
-  function finalizeReturn(skipRating = false) {
+  async function finalizeReturn(skipRating = false) {
     const loan = state.loans.find(l => l.id === pendingReturnLoanId);
     if (!loan) {
       $("#returnFeedbackDialog").close();
@@ -1423,18 +1993,48 @@ button.busy {
 
     const book = state.books.find(b => b.id === loan.bookId);
     const student = state.students.find(s => s.id === loan.studentId);
-    loan.returnDate = todayISO();
-    loan.completionStatus = pendingCompletionStatus;
-    loan.rating = skipRating ? null : pendingRating;
+    const updates = {
+      return_date: todayISO(),
+      completion_status: pendingCompletionStatus,
+      rating: skipRating ? null : pendingRating
+    };
 
-    save();
-    $("#returnFeedbackDialog").close();
-    const finishedText = loan.completionStatus === "finished" ? "Finished" : "Didn't finish";
-    const ratingPart = loan.rating ? ` • ${loan.rating}/5 stars` : "";
-    $("#returnResult").innerHTML = `<div class="result-success">✓ ${escapeHTML(book?.title || "Book")} returned${student ? ` by ${escapeHTML(student.name)}` : ""}. ${finishedText}${ratingPart}.</div>`;
-    $("#returnBook").value = "";
-    resetReturnFeedback();
-    $("#returnBook").focus();
+    $("#completeReturnBtn").disabled = true;
+    $("#returnWithoutRating").disabled = true;
+    setCloudStatus("Saving…", "syncing");
+
+    try {
+      const { data, error } = await db
+        .from("loans")
+        .update(updates)
+        .eq("id", loan.id)
+        .select("*")
+        .single();
+      if (error) throw error;
+
+      const savedLoan = dbLoanToApp(data);
+      const index = state.loans.findIndex(l => l.id === loan.id);
+      state.loans[index] = savedLoan;
+
+      setCloudStatus("Cloud database");
+      renderAll();
+      $("#returnFeedbackDialog").close();
+
+      const finishedText = savedLoan.completionStatus === "finished" ? "Finished" : "Didn't finish";
+      const ratingPart = savedLoan.rating ? ` • ${savedLoan.rating}/5 stars` : "";
+      $("#returnResult").innerHTML =
+        `<div class="result-success">✓ ${escapeHTML(book?.title || "Book")} returned${student ? ` by ${escapeHTML(student.name)}` : ""}. ${finishedText}${ratingPart}.</div>`;
+      $("#returnBook").value = "";
+      resetReturnFeedback();
+      $("#returnBook").focus();
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      $("#returnFeedbackWarning").textContent = `Could not return book: ${err.message}`;
+    } finally {
+      $("#completeReturnBtn").disabled = false;
+      $("#returnWithoutRating").disabled = false;
+    }
   }
 
   $("#returnBookForm").addEventListener("submit", e => {
@@ -1895,24 +2495,148 @@ button.busy {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 
+  function freshUUID(value) {
+    return isUUID(value) ? value : crypto.randomUUID();
+  }
+
+  async function insertRowsInChunks(table, rows, chunkSize = 250) {
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      const chunk = rows.slice(i, i + chunkSize);
+      if (!chunk.length) continue;
+      const { error } = await db.from(table).insert(chunk);
+      if (error) throw error;
+    }
+  }
+
+  async function deleteAllOwnedRows() {
+    if (!activeUser) throw new Error("You are not signed in.");
+    const ownerId = activeUser.id;
+
+    let result = await db.from("loans").delete().eq("owner_id", ownerId);
+    if (result.error) throw result.error;
+
+    result = await db.from("students").delete().eq("owner_id", ownerId);
+    if (result.error) throw result.error;
+
+    result = await db.from("books").delete().eq("owner_id", ownerId);
+    if (result.error) throw result.error;
+  }
+
   $("#importFile").addEventListener("change", async e => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     try {
       const parsed = JSON.parse(await file.text());
       const incoming = parsed.data || parsed;
-      if (!incoming.books || !incoming.students || !incoming.loans) throw new Error("Invalid backup.");
-      if (!confirm("Replace the data in this browser with this backup?")) return;
-      state.books = incoming.books;
-      state.students = incoming.students;
-      state.loans = incoming.loans;
-      state.settings = incoming.settings || { dueDays: DEFAULT_DUE_DAYS };
-      save();
-      toast("Backup imported");
+      if (!incoming.books || !incoming.students || !incoming.loans) {
+        throw new Error("Invalid backup.");
+      }
+
+      if (!confirm("Replace ALL cloud library data with this backup?")) return;
+      const typed = prompt('Second confirmation: type IMPORT to replace the cloud database.');
+      if (typed !== "IMPORT") {
+        toast("Import cancelled");
+        return;
+      }
+
+      const bookIdMap = new Map();
+      const studentIdMap = new Map();
+
+      const books = incoming.books.map(book => {
+        const newId = freshUUID(book.id);
+        bookIdMap.set(book.id, newId);
+        return appBookToDb({ ...book, id: newId }, true);
+      });
+
+      const students = incoming.students.map(student => {
+        const newId = freshUUID(student.id);
+        studentIdMap.set(student.id, newId);
+        return appStudentToDb({ ...student, id: newId }, true);
+      });
+
+      const loans = incoming.loans.map(loan => {
+        const mappedBookId = bookIdMap.get(loan.bookId) || loan.bookId;
+        const mappedStudentId = studentIdMap.get(loan.studentId) || loan.studentId;
+        if (!isUUID(mappedBookId) || !isUUID(mappedStudentId)) {
+          throw new Error("Backup contains a loan whose book or student could not be matched.");
+        }
+        return appLoanToDb({
+          ...loan,
+          id: freshUUID(loan.id),
+          bookId: mappedBookId,
+          studentId: mappedStudentId
+        }, true);
+      });
+
+      setCloudStatus("Importing…", "syncing");
+      await deleteAllOwnedRows();
+      await insertRowsInChunks("books", books);
+      await insertRowsInChunks("students", students);
+      await insertRowsInChunks("loans", loans);
+      await refreshRemoteState("Backup imported to cloud database");
     } catch (err) {
+      console.error(err);
+      setCloudStatus("Import error", "error");
       toast(`Import failed: ${err.message}`);
     } finally {
       e.target.value = "";
+    }
+  });
+
+  $("#teacherSettingsBtn").addEventListener("click", () => {
+    $("#settingsUserEmail").textContent = activeUser?.email || "";
+    $("#teacherSettingsDialog").showModal();
+  });
+
+  $("#closeTeacherSettings").addEventListener("click", () => {
+    $("#teacherSettingsDialog").close();
+  });
+
+  $("#signOutBtn").addEventListener("click", async () => {
+    $("#teacherSettingsDialog").close();
+    const { error } = await db.auth.signOut();
+    if (error) toast(`Sign out failed: ${error.message}`);
+  });
+
+  $("#resetAllDataBtn").addEventListener("click", async () => {
+    const first = confirm(
+      "This will permanently delete EVERY book, student, checkout, return, rating, and reading-history record from Mrs. Fuller's Library. Continue?"
+    );
+    if (!first) return;
+
+    const typed = prompt(
+      'FINAL CONFIRMATION\n\nType DELETE EVERYTHING exactly to permanently erase the cloud library database.'
+    );
+    if (typed !== "DELETE EVERYTHING") {
+      toast("Reset cancelled — nothing was deleted");
+      return;
+    }
+
+    const btn = $("#resetAllDataBtn");
+    btn.disabled = true;
+    btn.textContent = "Deleting…";
+    setCloudStatus("Deleting…", "syncing");
+
+    try {
+      await deleteAllOwnedRows();
+      state.books = [];
+      state.students = [];
+      state.loans = [];
+      recentIds = [];
+      selectedStudentId = null;
+      selectedProfileStudentId = null;
+      renderAll();
+      setCloudStatus("Cloud database");
+      $("#teacherSettingsDialog").close();
+      toast("All library data has been reset");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Delete error", "error");
+      toast(`Reset failed: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Reset All Library Data";
     }
   });
 
@@ -2247,7 +2971,7 @@ button.busy {
     renderHistory();
   }
 
-  renderAll();
+  initializeAuth();
 })();
 </script>
 </body>
