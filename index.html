@@ -610,6 +610,35 @@ button:disabled {
   cursor:not-allowed;
 }
 
+
+.roster-reset-zone {
+  margin-top:24px;
+  padding-top:20px;
+  border-top:1px solid var(--line);
+}
+.roster-reset-zone h4 {
+  margin:5px 0 6px;
+  font-size:19px;
+}
+.warning-btn {
+  background:#8a657f;
+  color:white;
+  border:1px solid #8a657f;
+  border-radius:10px;
+  padding:10px 13px;
+  font-weight:800;
+}
+.warning-btn:hover {
+  background:#76566d;
+}
+.preserve-list {
+  margin:10px 0 14px;
+  padding-left:18px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.55;
+}
+
 </style>
 </head>
 <body class="logged-out">
@@ -984,6 +1013,21 @@ button:disabled {
         <button type="button" class="secondary" id="signOutBtn">Sign out</button>
       </div>
 
+      <div class="roster-reset-zone">
+        <div class="eyebrow">NEW CLASS / SCHOOL YEAR</div>
+        <h4>Clear student roster</h4>
+        <p class="muted">Removes all students from the active class without deleting the reading data connected to them.</p>
+        <ul class="preserve-list">
+          <li>Books stay in the library.</li>
+          <li>Book ratings are preserved.</li>
+          <li>Finished / Didn't Finish data is preserved.</li>
+          <li>Past checkout history is preserved.</li>
+          <li>Students disappear from the active roster and library-card page.</li>
+        </ul>
+        <button type="button" class="warning-btn" id="clearStudentRosterBtn">Clear Student Roster</button>
+        <div class="small muted">Requires two confirmations. This archives students rather than destroying their history.</div>
+      </div>
+
       <div class="danger-zone">
         <div class="eyebrow">DANGER ZONE</div>
         <h4>Reset all library data</h4>
@@ -995,14 +1039,14 @@ button:disabled {
   </dialog>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 10</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 11</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v10 cloud build loaded");
-  const BUILD_VERSION = "v10";
+  console.info("Mrs. Fuller's Library v11 cloud build loaded");
+  const BUILD_VERSION = "v11";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -2597,6 +2641,78 @@ button:disabled {
     $("#teacherSettingsDialog").close();
     const { error } = await db.auth.signOut();
     if (error) toast(`Sign out failed: ${error.message}`);
+  });
+
+  $("#clearStudentRosterBtn").addEventListener("click", async () => {
+    const activeStudents = state.students.filter(s => s.active);
+
+    if (!activeStudents.length) {
+      toast("There are no active students to clear");
+      return;
+    }
+
+    const openLoans = state.loans.filter(l => !l.returnDate);
+    const firstMessage = openLoans.length
+      ? `This will remove ${activeStudents.length} student${activeStudents.length === 1 ? "" : "s"} from the active roster.\n\n${openLoans.length} book${openLoans.length === 1 ? " is" : "s are"} still checked out. Those loan records and student names will remain in history so you can still identify who has each book.\n\nBooks, ratings, Finished/DNF data, and all history will be preserved.\n\nContinue?`
+      : `This will remove ${activeStudents.length} student${activeStudents.length === 1 ? "" : "s"} from the active roster.\n\nBooks, ratings, Finished/DNF data, and all borrowing history will be preserved.\n\nContinue?`;
+
+    const first = confirm(firstMessage);
+    if (!first) return;
+
+    const typed = prompt(
+      'SECOND CONFIRMATION\n\nType CLEAR STUDENTS exactly to archive the current student roster.'
+    );
+
+    if (typed !== "CLEAR STUDENTS") {
+      toast("Student roster was not changed");
+      return;
+    }
+
+    const btn = $("#clearStudentRosterBtn");
+    btn.disabled = true;
+    btn.textContent = "Clearing roster…";
+    setCloudStatus("Saving…", "syncing");
+
+    try {
+      if (!activeUser) throw new Error("You are not signed in.");
+
+      const { error } = await db
+        .from("students")
+        .update({ active: false })
+        .eq("owner_id", activeUser.id)
+        .eq("active", true);
+
+      if (error) throw error;
+
+      state.students.forEach(student => {
+        if (student.active) student.active = false;
+      });
+
+      selectedStudentId = null;
+      selectedProfileStudentId = null;
+
+      $("#checkoutStudent").value = "";
+      $("#checkoutBook").value = "";
+      $("#checkoutBook").disabled = true;
+      $("#checkoutBookBtn").disabled = true;
+      $("#selectedStudent").className = "selected-box muted";
+      $("#selectedStudent").textContent = "No student selected.";
+
+      renderAll();
+      setCloudStatus("Cloud database");
+      $("#teacherSettingsDialog").close();
+
+      toast(
+        `${activeStudents.length} student${activeStudents.length === 1 ? "" : "s"} archived — books and ratings preserved`
+      );
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      toast(`Could not clear student roster: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Clear Student Roster";
+    }
   });
 
   $("#resetAllDataBtn").addEventListener("click", async () => {
