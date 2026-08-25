@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/@zxing/browser@0.2.1"></script>
 <style>
 * { box-sizing: border-box; }
 :root {
@@ -639,6 +640,196 @@ button:disabled {
   line-height:1.55;
 }
 
+
+.camera-btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border:1px solid #cdbdca;
+  background:#f6eef4;
+  color:var(--green);
+  border-radius:11px;
+  padding:11px 13px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.camera-btn:hover {
+  background:#eee1ea;
+}
+.camera-btn:disabled {
+  opacity:.45;
+}
+.camera-scanner-dialog {
+  width:min(680px,calc(100vw - 24px));
+  border:0;
+  border-radius:22px;
+  padding:0;
+  background:#161216;
+  color:white;
+  overflow:hidden;
+  box-shadow:0 30px 90px rgba(0,0,0,.45);
+}
+.camera-scanner-dialog::backdrop {
+  background:rgba(12,8,11,.82);
+}
+.camera-shell {
+  display:flex;
+  flex-direction:column;
+}
+.camera-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+  padding:17px 18px;
+  background:#251d23;
+}
+.camera-top h3 {
+  margin:4px 0 0;
+  font-size:21px;
+}
+.camera-close {
+  width:40px;
+  height:40px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.08);
+  color:white;
+  font-size:25px;
+  line-height:1;
+}
+.camera-stage {
+  position:relative;
+  width:100%;
+  aspect-ratio:4/3;
+  overflow:hidden;
+  background:#050405;
+}
+.camera-stage video {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.camera-shade {
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(to bottom,rgba(0,0,0,.38),rgba(0,0,0,0) 23%,rgba(0,0,0,0) 77%,rgba(0,0,0,.38));
+  pointer-events:none;
+}
+.camera-target {
+  position:absolute;
+  left:10%;
+  right:10%;
+  top:35%;
+  height:30%;
+  pointer-events:none;
+  background:rgba(255,255,255,.03);
+}
+.corner {
+  position:absolute;
+  width:34px;
+  height:34px;
+  border-color:white;
+  border-style:solid;
+}
+.corner.tl { left:0; top:0; border-width:4px 0 0 4px; }
+.corner.tr { right:0; top:0; border-width:4px 4px 0 0; }
+.corner.bl { left:0; bottom:0; border-width:0 0 4px 4px; }
+.corner.br { right:0; bottom:0; border-width:0 4px 4px 0; }
+.scan-line {
+  position:absolute;
+  left:4%;
+  right:4%;
+  top:50%;
+  height:2px;
+  background:rgba(236,209,229,.95);
+  box-shadow:0 0 12px rgba(236,209,229,.75);
+  animation:cameraScanLine 2s ease-in-out infinite alternate;
+}
+@keyframes cameraScanLine {
+  from { transform:translateY(-45px); opacity:.45; }
+  to { transform:translateY(45px); opacity:1; }
+}
+.camera-bottom {
+  display:grid;
+  gap:8px;
+  padding:16px 18px 18px;
+  background:#251d23;
+}
+.camera-status {
+  font-weight:900;
+  font-size:15px;
+}
+.camera-status.error {
+  color:#ffb0a7;
+}
+.camera-status.found {
+  color:#e9d1e2;
+}
+.camera-tip {
+  color:rgba(255,255,255,.62);
+  font-size:12px;
+}
+.camera-bottom .secondary {
+  margin-top:5px;
+  background:rgba(255,255,255,.08);
+  color:white;
+  border-color:rgba(255,255,255,.25);
+}
+@media (max-width:700px) {
+  .camera-scanner-dialog {
+    width:100vw;
+    max-width:none;
+    height:100dvh;
+    max-height:none;
+    margin:0;
+    border-radius:0;
+  }
+  .camera-shell {
+    height:100dvh;
+  }
+  .camera-stage {
+    flex:1;
+    min-height:0;
+    aspect-ratio:auto;
+  }
+  .camera-target {
+    left:7%;
+    right:7%;
+    top:38%;
+    height:24%;
+  }
+  .camera-btn span {
+    display:none;
+  }
+  .camera-btn {
+    min-width:48px;
+    padding-left:12px;
+    padding-right:12px;
+  }
+  .scan-row {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+  }
+  .camera-form {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto auto;
+  }
+}
+@media (max-width:430px) {
+  .scan-row,
+  .camera-form {
+    grid-template-columns:1fr auto;
+  }
+  .scan-row input,
+  .camera-form input {
+    grid-column:1 / -1;
+  }
+}
+
 </style>
 </head>
 <body class="logged-out">
@@ -728,12 +919,13 @@ button:disabled {
         <div class="panel scan-panel">
           <div class="eyebrow">RAPID ENTRY</div>
           <h2>Add books by ISBN</h2>
-          <p class="muted">Click the box once, then scan the publisher barcode on each book. Most USB/Bluetooth barcode scanners act like a keyboard and press Enter automatically.</p>
+          <p class="muted">Scan the publisher barcode with a USB/Bluetooth scanner, type the ISBN, or use your phone's camera.</p>
 
           <form id="scanBookForm" class="scan-form">
             <label for="scanIsbn">ISBN barcode</label>
             <div class="scan-row">
               <input id="scanIsbn" inputmode="numeric" autocomplete="off" placeholder="Scan or type ISBN" />
+              <button class="camera-btn" type="button" data-camera-target="scanIsbn" data-camera-form="scanBookForm" data-camera-kind="isbn">📷 <span>Camera</span></button>
               <button class="primary" type="submit">Look up</button>
             </div>
           </form>
@@ -908,8 +1100,9 @@ button:disabled {
           <div class="step-badge">1</div>
           <h2>Scan student card</h2>
           <p class="muted">Scan the student's classroom library card.</p>
-          <form id="checkoutStudentForm" class="scan-form">
+          <form id="checkoutStudentForm" class="scan-form camera-form">
             <input id="checkoutStudent" autocomplete="off" placeholder="Scan student card" />
+            <button class="camera-btn" type="button" data-camera-target="checkoutStudent" data-camera-form="checkoutStudentForm" data-camera-kind="student">📷 <span>Camera</span></button>
             <button class="primary" type="submit">Select</button>
           </form>
           <div id="selectedStudent" class="selected-box muted">No student selected.</div>
@@ -919,8 +1112,9 @@ button:disabled {
           <div class="step-badge">2</div>
           <h2>Scan book</h2>
           <p class="muted">Use the ISBN barcode already printed on the book.</p>
-          <form id="checkoutBookForm" class="scan-form">
+          <form id="checkoutBookForm" class="scan-form camera-form">
             <input id="checkoutBook" autocomplete="off" placeholder="Scan book ISBN" disabled />
+            <button class="camera-btn" id="checkoutBookCameraBtn" type="button" data-camera-target="checkoutBook" data-camera-form="checkoutBookForm" data-camera-kind="isbn" disabled>📷 <span>Camera</span></button>
             <button class="primary" id="checkoutBookBtn" type="submit" disabled>Check out</button>
           </form>
           <div id="checkoutResult"></div>
@@ -931,8 +1125,9 @@ button:disabled {
         <div class="step-badge">RETURN</div>
         <h2>Scan returned books</h2>
         <p class="muted">No student card is needed. Scan each returned book one after another.</p>
-        <form id="returnBookForm" class="scan-form wide">
+        <form id="returnBookForm" class="scan-form wide camera-form">
           <input id="returnBook" autocomplete="off" placeholder="Scan book ISBN" />
+          <button class="camera-btn" type="button" data-camera-target="returnBook" data-camera-form="returnBookForm" data-camera-kind="isbn">📷 <span>Camera</span></button>
           <button class="primary" type="submit">Return</button>
         </form>
         <div id="returnResult"></div>
@@ -949,6 +1144,38 @@ button:disabled {
       </div>
     </section>
   </main>
+
+
+
+  <dialog id="cameraScannerDialog" class="camera-scanner-dialog">
+    <div class="camera-shell">
+      <div class="camera-top">
+        <div>
+          <div class="eyebrow">CAMERA SCANNER</div>
+          <h3 id="cameraScannerTitle">Scan book barcode</h3>
+        </div>
+        <button type="button" class="camera-close" id="closeCameraScanner" aria-label="Close camera">×</button>
+      </div>
+
+      <div class="camera-stage">
+        <video id="cameraScannerVideo" autoplay playsinline muted></video>
+        <div class="camera-shade"></div>
+        <div class="camera-target">
+          <span class="corner tl"></span>
+          <span class="corner tr"></span>
+          <span class="corner bl"></span>
+          <span class="corner br"></span>
+          <div class="scan-line"></div>
+        </div>
+      </div>
+
+      <div class="camera-bottom">
+        <div id="cameraScannerStatus" class="camera-status">Point the camera at the barcode.</div>
+        <div class="camera-tip">Hold the phone steady and fill the box with the barcode.</div>
+        <button type="button" class="secondary" id="cameraScannerCancel">Cancel</button>
+      </div>
+    </div>
+  </dialog>
 
 
   <dialog id="returnFeedbackDialog" class="book-dialog return-feedback">
@@ -1039,14 +1266,14 @@ button:disabled {
   </dialog>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 11</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 12</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v11 cloud build loaded");
-  const BUILD_VERSION = "v11";
+  console.info("Mrs. Fuller's Library v12 mobile camera build loaded");
+  const BUILD_VERSION = "v12";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -1090,6 +1317,13 @@ button:disabled {
   let selectedProfileStudentId = null;
   let activeUser = null;
   let initializedUserId = null;
+
+  let cameraScanControls = null;
+  let cameraScanReader = null;
+  let cameraTargetInputId = null;
+  let cameraTargetFormId = null;
+  let cameraScanKind = "isbn";
+  let cameraScanLocked = false;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -1349,6 +1583,7 @@ button:disabled {
   }
 
   function showLoggedOut() {
+    closeCameraScanner();
     activeUser = null;
     initializedUserId = null;
     state.books = [];
@@ -1403,6 +1638,174 @@ button:disabled {
       setTimeout(() => startAuthenticatedApp(session.user), 0);
     }
   });
+
+  function isbnCandidate(raw) {
+    const value = normalizeISBN(raw);
+    return (value.length === 10 || value.length === 13) ? value : null;
+  }
+
+  function studentCandidate(raw) {
+    const value = cleanCode(raw).toUpperCase();
+    return /^STU-\d{4,}$/.test(value) ? value : null;
+  }
+
+  function cameraCandidate(raw) {
+    return cameraScanKind === "student"
+      ? studentCandidate(raw)
+      : isbnCandidate(raw);
+  }
+
+  function stopCameraScanner() {
+    try {
+      cameraScanControls?.stop?.();
+    } catch (err) {
+      console.warn("Camera controls stop:", err);
+    }
+    cameraScanControls = null;
+
+    const video = $("#cameraScannerVideo");
+    if (video?.srcObject) {
+      try {
+        video.srcObject.getTracks().forEach(track => track.stop());
+      } catch {}
+      video.srcObject = null;
+    }
+
+    cameraScanReader = null;
+    cameraScanLocked = false;
+  }
+
+  function closeCameraScanner() {
+    stopCameraScanner();
+    const dialog = $("#cameraScannerDialog");
+    if (dialog?.open) dialog.close();
+  }
+
+  async function acceptCameraScan(rawValue) {
+    if (cameraScanLocked) return;
+    const candidate = cameraCandidate(rawValue);
+    if (!candidate) return;
+
+    cameraScanLocked = true;
+    $("#cameraScannerStatus").className = "camera-status found";
+    $("#cameraScannerStatus").textContent =
+      cameraScanKind === "student"
+        ? `Student card found: ${candidate}`
+        : `ISBN found: ${candidate}`;
+
+    if (navigator.vibrate) {
+      try { navigator.vibrate(90); } catch {}
+    }
+
+    const input = document.getElementById(cameraTargetInputId);
+    const form = document.getElementById(cameraTargetFormId);
+    if (input) input.value = candidate;
+
+    await new Promise(resolve => setTimeout(resolve, 220));
+    closeCameraScanner();
+
+    if (form) {
+      setTimeout(() => form.requestSubmit(), 80);
+    }
+  }
+
+  async function startCameraScanner({ inputId, formId, kind }) {
+    cameraTargetInputId = inputId;
+    cameraTargetFormId = formId;
+    cameraScanKind = kind || "isbn";
+    cameraScanLocked = false;
+
+    const dialog = $("#cameraScannerDialog");
+    const status = $("#cameraScannerStatus");
+    $("#cameraScannerTitle").textContent =
+      cameraScanKind === "student" ? "Scan student library card" : "Scan book barcode";
+    status.className = "camera-status";
+    status.textContent = "Starting camera…";
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      status.className = "camera-status error";
+      status.textContent = "Camera access is not supported by this browser.";
+      dialog.showModal();
+      return;
+    }
+
+    dialog.showModal();
+
+    if (!window.ZXingBrowser?.BrowserMultiFormatReader) {
+      status.className = "camera-status error";
+      status.textContent = "The barcode scanner did not load. Refresh the page and try again.";
+      return;
+    }
+
+    try {
+      cameraScanReader = new ZXingBrowser.BrowserMultiFormatReader(undefined, {
+        delayBetweenScanAttempts: 100,
+        delayBetweenScanSuccess: 500
+      });
+
+      const video = $("#cameraScannerVideo");
+
+      cameraScanControls = await cameraScanReader.decodeFromConstraints(
+        {
+          audio: false,
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          }
+        },
+        video,
+        (result, error, controls) => {
+          if (result && !cameraScanLocked) {
+            const raw = typeof result.getText === "function"
+              ? result.getText()
+              : (result.text || "");
+            acceptCameraScan(raw);
+          }
+          // NotFound errors are expected while the camera is searching.
+          if (error && error.name && !String(error.name).includes("NotFound")) {
+            console.debug("Barcode scan:", error.name);
+          }
+        }
+      );
+
+      status.textContent =
+        cameraScanKind === "student"
+          ? "Point the camera at the student's barcode."
+          : "Point the camera at the ISBN barcode.";
+    } catch (err) {
+      console.error("Camera scanner:", err);
+      stopCameraScanner();
+      status.className = "camera-status error";
+
+      if (err?.name === "NotAllowedError") {
+        status.textContent = "Camera permission was denied. Allow camera access for this site and try again.";
+      } else if (err?.name === "NotFoundError") {
+        status.textContent = "No camera was found on this device.";
+      } else {
+        status.textContent = `Could not start camera: ${err?.message || err}`;
+      }
+    }
+  }
+
+  $$("[data-camera-target]").forEach(button => {
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      startCameraScanner({
+        inputId: button.dataset.cameraTarget,
+        formId: button.dataset.cameraForm,
+        kind: button.dataset.cameraKind
+      });
+    });
+  });
+
+  $("#closeCameraScanner").addEventListener("click", closeCameraScanner);
+  $("#cameraScannerCancel").addEventListener("click", closeCameraScanner);
+  $("#cameraScannerDialog").addEventListener("cancel", e => {
+    e.preventDefault();
+    closeCameraScanner();
+  });
+  $("#cameraScannerDialog").addEventListener("close", stopCameraScanner);
 
   async function lookupBook(isbn) {
     // Build v3: one Open Library Search API request per scan.
@@ -1900,6 +2303,7 @@ button:disabled {
     $("#selectedStudent").innerHTML = `<strong>${escapeHTML(student.name)}</strong><br><span class="muted">${escapeHTML(student.code)}</span>`;
     $("#checkoutBook").disabled = false;
     $("#checkoutBookBtn").disabled = false;
+    $("#checkoutBookCameraBtn").disabled = false;
     $("#checkoutBook").focus();
   });
 
@@ -2695,6 +3099,7 @@ button:disabled {
       $("#checkoutBook").value = "";
       $("#checkoutBook").disabled = true;
       $("#checkoutBookBtn").disabled = true;
+      $("#checkoutBookCameraBtn").disabled = true;
       $("#selectedStudent").className = "selected-box muted";
       $("#selectedStudent").textContent = "No student selected.";
 
