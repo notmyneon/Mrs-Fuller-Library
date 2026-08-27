@@ -1167,7 +1167,7 @@ button:disabled {
   width:100%;
   height:100%;
   object-fit:contain;
-  filter:drop-shadow(0 2px 3px rgba(0,0,0,.12));
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.10));
 }
 .auth-logo-mark {
   width:86px;
@@ -1182,9 +1182,9 @@ button:disabled {
 }
 @media (max-width:600px) {
   .header-logo-wrap {
-    width:50px;
-    height:50px;
-    flex-basis:50px;
+    width:64px;
+    height:64px;
+    flex-basis:64px;
   }
   .site-brand {
     gap:10px;
@@ -1193,8 +1193,14 @@ button:disabled {
 
 
 .header-logo-wrap {
-  border-radius:16px;
-  background:rgba(255,255,255,.06);
+  width:84px;
+  height:84px;
+  flex:0 0 84px;
+  display:grid;
+  place-items:center;
+  background:transparent;
+  border-radius:0;
+  padding:0;
 }
 .auth-logo-mark {
   background:var(--green);
@@ -1760,14 +1766,14 @@ button:disabled {
   <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 19</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 20</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v19 dual-logo build loaded");
-  const BUILD_VERSION = "v19";
+  console.info("Mrs. Fuller's Library v20 larger clean header logo build loaded");
+  const BUILD_VERSION = "v20";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
