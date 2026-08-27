@@ -200,19 +200,56 @@ footer {
 }
 @media print {
   body * { visibility:hidden !important; }
-  #studentCards,#studentCards * { visibility:visible !important; }
-  #studentCards {
-    position:absolute; left:0; top:0; width:100%;
-    display:grid; grid-template-columns:repeat(2,1fr); gap:12px; padding:12mm;
+
+  body.print-student-cards #studentCards,
+  body.print-student-cards #studentCards * {
+    visibility:visible !important;
   }
-  .library-card { break-inside:avoid; box-shadow:none; }
-  .card-actions { display:none; }
+  body.print-student-cards #studentCards {
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+    padding:12mm;
+  }
+  body.print-student-cards .library-card {
+    break-inside:avoid;
+    box-shadow:none;
+  }
+  body.print-student-cards .card-actions {
+    display:none;
+  }
+
+  body.print-book-labels #bookLabelsPrintArea,
+  body.print-book-labels #bookLabelsPrintArea * {
+    visibility:visible !important;
+  }
+  body.print-book-labels #bookLabelsPrintArea {
+    display:grid !important;
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    grid-template-columns:repeat(2,3.75in);
+    grid-auto-rows:2.12in;
+    gap:.10in .16in;
+    padding:.35in .32in;
+    align-content:start;
+  }
+
+  @page {
+    size:letter portrait;
+    margin:0;
+  }
 }
 
 
 .book-entry-fields {
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:10px;
   margin:14px 0;
 }
@@ -830,6 +867,209 @@ button:disabled {
   }
 }
 
+
+.field-help {
+  display:block;
+  margin-top:5px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:600;
+}
+
+.collection-breakdown-grid {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:15px;
+}
+.breakdown-card {
+  border:1px solid var(--line);
+  border-radius:15px;
+  padding:15px;
+  background:#fbf8fa;
+}
+.breakdown-card h4 {
+  margin:0 0 12px;
+  font-size:17px;
+}
+.breakdown-list {
+  display:grid;
+  gap:9px;
+}
+.breakdown-row {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:
+    "label count"
+    "bar bar";
+  gap:4px 10px;
+}
+.breakdown-label {
+  grid-area:label;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:12px;
+  font-weight:800;
+}
+.breakdown-count {
+  grid-area:count;
+  color:var(--green);
+  font-size:12px;
+  font-weight:900;
+}
+.breakdown-track {
+  grid-area:bar;
+  height:6px;
+  border-radius:999px;
+  overflow:hidden;
+  background:#e9dfe6;
+}
+.breakdown-fill {
+  height:100%;
+  min-width:3px;
+  border-radius:999px;
+  background:var(--green-2);
+}
+.breakdown-more {
+  color:var(--muted);
+  font-size:11px;
+  padding-top:2px;
+}
+.breakdown-empty {
+  color:var(--muted);
+  font-size:12px;
+}
+
+.book-label-dialog {
+  width:min(780px,calc(100vw - 28px));
+}
+.label-picker-tools {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 210px;
+  gap:10px;
+}
+.label-picker-actions {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:12px 0;
+}
+.label-picker-actions strong {
+  margin-left:auto;
+  color:var(--green);
+  font-size:12px;
+}
+.book-label-picker {
+  max-height:430px;
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:white;
+}
+.book-label-option {
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:11px;
+  align-items:start;
+  padding:11px 12px;
+  border-bottom:1px solid var(--line);
+  cursor:pointer;
+}
+.book-label-option:last-child {
+  border-bottom:0;
+}
+.book-label-option:hover {
+  background:#faf5f8;
+}
+.book-label-option input {
+  width:auto;
+  margin-top:3px;
+}
+.book-label-option strong {
+  display:block;
+  line-height:1.25;
+}
+.book-label-option-meta {
+  margin-top:3px;
+  color:var(--muted);
+  font-size:11px;
+}
+.book-label-print-area {
+  display:none;
+}
+.book-print-label {
+  border:1px dashed #888;
+  border-radius:5px;
+  padding:.13in .16in;
+  height:2.12in;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:auto auto auto 1fr auto;
+  break-inside:avoid;
+  page-break-inside:avoid;
+  background:white;
+  color:#111;
+}
+.book-print-brand {
+  font-size:9pt;
+  font-weight:900;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#68425f;
+}
+.book-print-title {
+  font-size:12pt;
+  font-weight:900;
+  line-height:1.15;
+  margin-top:3px;
+  max-height:2.35em;
+  overflow:hidden;
+}
+.book-print-details {
+  font-size:8.5pt;
+  line-height:1.25;
+  margin-top:4px;
+}
+.book-print-details strong {
+  font-weight:900;
+}
+.book-print-barcode {
+  display:flex;
+  align-items:end;
+  justify-content:center;
+  min-height:55px;
+  overflow:hidden;
+  margin-top:2px;
+}
+.book-print-barcode svg {
+  max-width:100%;
+  height:52px;
+}
+.book-print-code {
+  text-align:center;
+  font:7.5pt ui-monospace, SFMono-Regular, Menlo, monospace;
+  margin-top:1px;
+}
+
+@media (max-width:1000px) {
+  .collection-breakdown-grid {
+    grid-template-columns:1fr;
+  }
+}
+@media (max-width:700px) {
+  .label-picker-tools {
+    grid-template-columns:1fr;
+  }
+  .toolbar {
+    width:100%;
+  }
+  #printBookLabelsBtn {
+    width:100%;
+  }
+}
+
 </style>
 </head>
 <body class="logged-out">
@@ -903,6 +1143,30 @@ button:disabled {
       </div>
 
       <div class="panel">
+        <div class="panel-head wrap">
+          <div>
+            <div class="eyebrow">COLLECTION SNAPSHOT</div>
+            <h3>What's in Mrs. Fuller's Library?</h3>
+            <p class="muted">A quick breakdown of active books. Categories come from the book metadata lookup.</p>
+          </div>
+        </div>
+        <div class="collection-breakdown-grid">
+          <section class="breakdown-card">
+            <h4>Reading Levels</h4>
+            <div id="readingLevelBreakdown" class="breakdown-list"></div>
+          </section>
+          <section class="breakdown-card">
+            <h4>Genres</h4>
+            <div id="genreBreakdown" class="breakdown-list"></div>
+          </section>
+          <section class="breakdown-card">
+            <h4>Categories</h4>
+            <div id="categoryBreakdown" class="breakdown-list"></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="panel">
         <div class="panel-head">
           <div>
             <h3>Currently checked out</h3>
@@ -940,8 +1204,10 @@ button:disabled {
               <label>Title <input name="title" required /></label>
               <label>Author <input name="author" /></label>
               <label>Reading level <input name="readingLevel" placeholder="e.g. Grade 3, 520L, Level M" /></label>
-              <label>Genre <input name="genre" placeholder="e.g. Fantasy" /></label>
-              <label>Subgenre <input name="subgenre" placeholder="e.g. Animal Fantasy" /></label>
+              <label>Genres
+                <input name="genre" placeholder="e.g. Fantasy, Adventure, Humour" />
+                <span class="field-help">Separate multiple genres with commas.</span>
+              </label>
               <label>Categories <input name="categories" placeholder="Optional extra tags" /></label>
               <button class="secondary" type="submit">Add manual book</button>
             </form>
@@ -979,6 +1245,7 @@ button:disabled {
               <option value="damaged">Damaged</option>
               <option value="removed">Removed</option>
             </select>
+            <button id="printBookLabelsBtn" class="secondary" type="button">Print book labels</button>
           </div>
         </div>
         <div id="libraryGrid" class="book-grid"></div>
@@ -1002,12 +1269,9 @@ button:disabled {
             <input id="editReadingLevel" placeholder="e.g. Grade 3, 520L, Level M" />
           </label>
 
-          <label>Genre
-            <input id="editGenre" placeholder="e.g. Fantasy" />
-          </label>
-
-          <label>Subgenre
-            <input id="editSubgenre" placeholder="e.g. Animal Fantasy" />
+          <label>Genres
+            <input id="editGenre" placeholder="e.g. Fantasy, Adventure, Humour" />
+            <span class="field-help">Separate multiple genres with commas.</span>
           </label>
 
           <label>Collection status
@@ -1031,6 +1295,43 @@ button:disabled {
             </div>
           </div>
         </form>
+      </div>
+    </dialog>
+
+    <dialog id="bookLabelDialog" class="book-dialog book-label-dialog">
+      <div class="dialog-inner">
+        <div class="dialog-head">
+          <div>
+            <div class="eyebrow">PRINT BOOK LABELS</div>
+            <h3>Choose books</h3>
+            <p class="muted small">Labels include the title, reading level, genres, and a scannable barcode using the book's ISBN/code.</p>
+          </div>
+          <button type="button" class="icon-btn" id="closeBookLabelDialog" aria-label="Close">×</button>
+        </div>
+
+        <div class="label-picker-tools">
+          <input id="bookLabelSearch" type="search" placeholder="Search title, ISBN, level, genre…" />
+          <select id="bookLabelFilter">
+            <option value="manual">Manual / custom entries</option>
+            <option value="all">All active books</option>
+          </select>
+        </div>
+
+        <div class="label-picker-actions">
+          <button type="button" class="secondary" id="selectVisibleLabelsBtn">Select visible</button>
+          <button type="button" class="secondary" id="clearLabelSelectionBtn">Clear selection</button>
+          <strong id="bookLabelSelectedCount">0 selected</strong>
+        </div>
+
+        <div id="bookLabelPicker" class="book-label-picker"></div>
+
+        <div class="dialog-actions">
+          <div class="small muted">Print layout: generic two-column labels on Letter paper.</div>
+          <div class="dialog-actions-right">
+            <button type="button" class="secondary" id="cancelBookLabelsBtn">Cancel</button>
+            <button type="button" class="primary" id="printSelectedBookLabelsBtn" disabled>Print selected labels</button>
+          </div>
+        </div>
       </div>
     </dialog>
 
@@ -1265,15 +1566,17 @@ button:disabled {
     </div>
   </dialog>
 
+  <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
+
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 12</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 13</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v12 mobile camera build loaded");
-  const BUILD_VERSION = "v12";
+  console.info("Mrs. Fuller's Library v13 collection tools build loaded");
+  const BUILD_VERSION = "v13";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -1425,6 +1728,29 @@ button:disabled {
   $$(".tab").forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.view)));
   $$("[data-go]").forEach(btn => btn.addEventListener("click", () => showView(btn.dataset.go)));
 
+  function splitGenres(value) {
+    const raw = Array.isArray(value) ? value : String(value || "").split(/[,;|]/);
+    const seen = new Set();
+    const result = [];
+    raw.forEach(item => {
+      const genre = String(item || "").trim();
+      if (!genre) return;
+      const key = genre.toLocaleLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      result.push(genre);
+    });
+    return result;
+  }
+
+  function mergedGenreString(genre, legacySubgenre = "") {
+    return splitGenres(`${genre || ""},${legacySubgenre || ""}`).join(", ");
+  }
+
+  function bookGenres(book) {
+    return splitGenres(mergedGenreString(book?.genre || "", book?.subgenre || ""));
+  }
+
   function dbBookToApp(row) {
     return {
       id: row.id,
@@ -1441,8 +1767,8 @@ button:disabled {
       categories: Array.isArray(row.categories) ? row.categories : [],
       image: row.image_url || "",
       readingLevel: row.reading_level || "",
-      genre: row.genre || "",
-      subgenre: row.subgenre || "",
+      genre: mergedGenreString(row.genre || "", row.subgenre || ""),
+      subgenre: "",
       collectionStatus: row.collection_status || "active",
       removalReason: row.removal_reason || "",
       dateAdded: row.date_added || todayISO()
@@ -1464,8 +1790,8 @@ button:disabled {
       categories: book.categories || [],
       image_url: book.image || "",
       reading_level: book.readingLevel || "",
-      genre: book.genre || "",
-      subgenre: book.subgenre || "",
+      genre: mergedGenreString(book.genre || "", book.subgenre || ""),
+      subgenre: "",
       collection_status: book.collectionStatus || "active",
       removal_reason: book.removalReason || "",
       date_added: book.dateAdded || todayISO()
@@ -1896,19 +2222,16 @@ button:disabled {
         <label>Reading level
           <input id="newBookReadingLevel" placeholder="Grade 3, 520L, Level M…" value="${escapeHTML(book.readingLevel || "")}" />
         </label>
-        <label>Genre
-          <input id="newBookGenre" placeholder="Fantasy" value="${escapeHTML(book.genre || "")}" />
-        </label>
-        <label>Subgenre
-          <input id="newBookSubgenre" placeholder="Animal Fantasy" value="${escapeHTML(book.subgenre || "")}" />
+        <label>Genres
+          <input id="newBookGenre" placeholder="Fantasy, Adventure, Humour" value="${escapeHTML(mergedGenreString(book.genre || "", book.subgenre || ""))}" />
+          <span class="field-help">Separate multiple genres with commas.</span>
         </label>
       </div>`;
 
     const existingMeta = already ? `
       <div class="book-meta-tags">
         ${book.readingLevel ? `<span class="meta-tag">Level: ${escapeHTML(book.readingLevel)}</span>` : ""}
-        ${book.genre ? `<span class="meta-tag">${escapeHTML(book.genre)}</span>` : ""}
-        ${book.subgenre ? `<span class="meta-tag">${escapeHTML(book.subgenre)}</span>` : ""}
+        ${bookGenres(book).map(g => `<span class="meta-tag">${escapeHTML(g)}</span>`).join("")}
       </div>
       <div class="book-card-actions">
         <button id="manageExistingBook" class="secondary" type="button">Manage book</button>
@@ -1935,8 +2258,8 @@ button:disabled {
 
     $("#confirmAddBook").onclick = async () => {
       book.readingLevel = $("#newBookReadingLevel").value.trim();
-      book.genre = $("#newBookGenre").value.trim();
-      book.subgenre = $("#newBookSubgenre").value.trim();
+      book.genre = splitGenres($("#newBookGenre").value).join(", ");
+      book.subgenre = "";
       book.collectionStatus = "active";
       book.removalReason = "";
 
@@ -2033,8 +2356,8 @@ button:disabled {
       categories: String(fd.get("categories") || "").split(",").map(x => x.trim()).filter(Boolean),
       image: "",
       readingLevel: String(fd.get("readingLevel") || "").trim(),
-      genre: String(fd.get("genre") || "").trim(),
-      subgenre: String(fd.get("subgenre") || "").trim(),
+      genre: splitGenres(String(fd.get("genre") || "")).join(", "),
+      subgenre: "",
       collectionStatus: "active",
       removalReason: "",
       dateAdded: todayISO()
@@ -2077,8 +2400,7 @@ button:disabled {
     $("#editBookId").value = book.id;
     $("#editBookTitle").textContent = book.title;
     $("#editReadingLevel").value = book.readingLevel || "";
-    $("#editGenre").value = book.genre || "";
-    $("#editSubgenre").value = book.subgenre || "";
+    $("#editGenre").value = bookGenres(book).join(", ");
     $("#editCollectionStatus").value = book.collectionStatus || "active";
     $("#editRemovalReason").value = book.removalReason || "";
     updateRemovalReasonVisibility();
@@ -2105,8 +2427,8 @@ button:disabled {
 
     const changes = {
       reading_level: $("#editReadingLevel").value.trim(),
-      genre: $("#editGenre").value.trim(),
-      subgenre: $("#editSubgenre").value.trim(),
+      genre: splitGenres($("#editGenre").value).join(", "),
+      subgenre: "",
       collection_status: $("#editCollectionStatus").value,
       removal_reason: $("#editRemovalReason").value.trim()
     };
@@ -2281,7 +2603,157 @@ button:disabled {
 
   window.deleteStudent = deleteStudent;
 
-  $("#printCardsBtn").addEventListener("click", () => window.print());
+  const selectedBookLabelIds = new Set();
+
+  function labelPickerBooks() {
+    const q = ($("#bookLabelSearch")?.value || "").trim().toLowerCase();
+    const filter = $("#bookLabelFilter")?.value || "manual";
+
+    return state.books
+      .filter(book => (book.collectionStatus || "active") === "active")
+      .filter(book => {
+        if (filter === "manual" && book.openLibraryKey) return false;
+        const hay = `${book.title} ${book.isbn} ${book.readingLevel || ""} ${bookGenres(book).join(" ")}`.toLowerCase();
+        return !q || hay.includes(q);
+      })
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  function renderBookLabelPicker() {
+    const books = labelPickerBooks();
+    const picker = $("#bookLabelPicker");
+    if (!picker) return;
+
+    picker.innerHTML = books.length ? books.map(book => {
+      const checked = selectedBookLabelIds.has(book.id) ? "checked" : "";
+      const details = [
+        book.isbn || "No code",
+        book.readingLevel ? `Level: ${book.readingLevel}` : "",
+        bookGenres(book).join(", ")
+      ].filter(Boolean).join(" • ");
+
+      return `
+        <label class="book-label-option">
+          <input type="checkbox" data-book-label-id="${book.id}" ${checked} />
+          <span>
+            <strong>${escapeHTML(book.title)}</strong>
+            <span class="book-label-option-meta">${escapeHTML(details)}</span>
+          </span>
+        </label>`;
+    }).join("") : `<div class="empty-state" style="padding:18px;">No books match this view.</div>`;
+
+    $$("[data-book-label-id]").forEach(input => {
+      input.addEventListener("change", () => {
+        if (input.checked) selectedBookLabelIds.add(input.dataset.bookLabelId);
+        else selectedBookLabelIds.delete(input.dataset.bookLabelId);
+        updateBookLabelSelectionCount();
+      });
+    });
+
+    updateBookLabelSelectionCount();
+  }
+
+  function updateBookLabelSelectionCount() {
+    const count = selectedBookLabelIds.size;
+    $("#bookLabelSelectedCount").textContent = `${count} selected`;
+    $("#printSelectedBookLabelsBtn").disabled = count === 0;
+  }
+
+  function openBookLabelDialog() {
+    selectedBookLabelIds.clear();
+    $("#bookLabelSearch").value = "";
+    $("#bookLabelFilter").value = "manual";
+    renderBookLabelPicker();
+    $("#bookLabelDialog").showModal();
+  }
+
+  function closeBookLabelDialog() {
+    $("#bookLabelDialog").close();
+  }
+
+  function renderPrintableBookLabels() {
+    const books = [...selectedBookLabelIds]
+      .map(id => state.books.find(book => book.id === id))
+      .filter(Boolean)
+      .sort((a, b) => a.title.localeCompare(b.title));
+
+    $("#bookLabelsPrintArea").innerHTML = books.map(book => {
+      const genres = bookGenres(book).join(", ") || "—";
+      const level = book.readingLevel || "—";
+      return `
+        <article class="book-print-label">
+          <div class="book-print-brand">Mrs. Fuller's Library</div>
+          <div class="book-print-title">${escapeHTML(book.title)}</div>
+          <div class="book-print-details">
+            <strong>Reading Level:</strong> ${escapeHTML(level)}<br>
+            <strong>Genres:</strong> ${escapeHTML(genres)}
+          </div>
+          <div class="book-print-barcode">
+            <svg class="book-label-barcode" data-code="${escapeHTML(book.isbn || "")}"></svg>
+          </div>
+          <div class="book-print-code">${escapeHTML(book.isbn || "")}</div>
+        </article>`;
+    }).join("");
+
+    $$(".book-label-barcode").forEach(svg => {
+      const code = svg.dataset.code;
+      if (!code) return;
+      try {
+        JsBarcode(svg, code, {
+          format: "CODE128",
+          displayValue: false,
+          height: 42,
+          margin: 0,
+          width: 1.35
+        });
+      } catch (err) {
+        console.warn("Could not render book barcode", code, err);
+      }
+    });
+  }
+
+  $("#printBookLabelsBtn").addEventListener("click", openBookLabelDialog);
+  $("#closeBookLabelDialog").addEventListener("click", closeBookLabelDialog);
+  $("#cancelBookLabelsBtn").addEventListener("click", closeBookLabelDialog);
+  $("#bookLabelSearch").addEventListener("input", renderBookLabelPicker);
+  $("#bookLabelFilter").addEventListener("change", renderBookLabelPicker);
+
+  $("#selectVisibleLabelsBtn").addEventListener("click", () => {
+    labelPickerBooks().forEach(book => selectedBookLabelIds.add(book.id));
+    renderBookLabelPicker();
+  });
+
+  $("#clearLabelSelectionBtn").addEventListener("click", () => {
+    selectedBookLabelIds.clear();
+    renderBookLabelPicker();
+  });
+
+  $("#printSelectedBookLabelsBtn").addEventListener("click", () => {
+    if (!selectedBookLabelIds.size) return;
+
+    const invalid = [...selectedBookLabelIds]
+      .map(id => state.books.find(book => book.id === id))
+      .filter(book => book && !book.isbn);
+
+    if (invalid.length) {
+      toast("One or more selected books has no ISBN/code to barcode.");
+      return;
+    }
+
+    renderPrintableBookLabels();
+    closeBookLabelDialog();
+    document.body.classList.add("print-book-labels");
+    window.print();
+  });
+
+  $("#printCardsBtn").addEventListener("click", () => {
+    document.body.classList.add("print-student-cards");
+    window.print();
+  });
+
+  window.addEventListener("afterprint", () => {
+    document.body.classList.remove("print-student-cards", "print-book-labels");
+  });
 
   $("#studentProfileSelect").addEventListener("change", e => {
     selectedProfileStudentId = e.target.value || null;
@@ -2786,10 +3258,10 @@ button:disabled {
         log,
         `Reading Log — ${schoolYear}`,
         "Every checkout recorded during this school year, including Finished / Didn’t Finish status and student rating.",
-        "M"
+        "L"
       );
       const logHeaders = [
-        "Student", "Book Title", "Author", "Reading Level", "Genre", "Subgenre",
+        "Student", "Book Title", "Author", "Reading Level", "Genres",
         "ISBN", "Checked Out", "Returned", "Read Status", "Rating", "Loan Status", "School Year"
       ];
       logHeaders.forEach((h, i) => log.getCell(4, i + 1).value = h);
@@ -2814,8 +3286,7 @@ button:disabled {
           book?.title || "Unknown book",
           (book?.authors || []).join(", "),
           book?.readingLevel || "",
-          book?.genre || "",
-          book?.subgenre || "",
+          bookGenres(book).join(", "),
           book?.isbn || "",
           excelDate(loan.checkoutDate),
           excelDate(loan.returnDate),
@@ -2825,14 +3296,14 @@ button:disabled {
           schoolYearForDate(loan.checkoutDate)
         ];
         values.forEach((v, c) => log.getCell(r, c + 1).value = v);
+        log.getCell(r, 7).numFmt = "mmm d, yyyy";
         log.getCell(r, 8).numFmt = "mmm d, yyyy";
-        log.getCell(r, 9).numFmt = "mmm d, yyyy";
       });
-      setTableBorders(log, 5, 4 + logRows.length, 1, 13);
-      log.autoFilter = `A4:M${Math.max(4, 4 + logRows.length)}`;
+      setTableBorders(log, 5, 4 + logRows.length, 1, 12);
+      log.autoFilter = `A4:L${Math.max(4, 4 + logRows.length)}`;
       log.columns = [
-        { width: 22 }, { width: 38 }, { width: 26 }, { width: 16 }, { width: 18 },
-        { width: 20 }, { width: 17 }, { width: 15 }, { width: 15 }, { width: 16 },
+        { width: 22 }, { width: 38 }, { width: 26 }, { width: 16 }, { width: 28 },
+        { width: 17 }, { width: 15 }, { width: 15 }, { width: 16 },
         { width: 10 }, { width: 20 }, { width: 12 }
       ];
 
@@ -2844,10 +3315,10 @@ button:disabled {
         booksSheet,
         `Book Popularity — ${schoolYear}`,
         "Library-level summary of finished books, did-not-finish returns, circulation, and student ratings.",
-        "L"
+        "K"
       );
       const bookHeaders = [
-        "Book Title", "Author", "Reading Level", "Genre", "Subgenre", "ISBN",
+        "Book Title", "Author", "Reading Level", "Genres", "ISBN",
         "Times Finished", "Did Not Finish", "Average Rating", "Number of Ratings",
         "Total Checkouts", "Currently Out"
       ];
@@ -2875,8 +3346,7 @@ button:disabled {
           x.book.title,
           (x.book.authors || []).join(", "),
           x.book.readingLevel || "",
-          x.book.genre || "",
-          x.book.subgenre || "",
+          bookGenres(x.book).join(", "),
           x.book.isbn || "",
           x.finished,
           x.dnf,
@@ -2887,11 +3357,11 @@ button:disabled {
         ];
         vals.forEach((v, c) => booksSheet.getCell(r, c + 1).value = v);
       });
-      setTableBorders(booksSheet, 5, 4 + bookReport.length, 1, 12);
-      booksSheet.autoFilter = `A4:L${Math.max(4, 4 + bookReport.length)}`;
+      setTableBorders(booksSheet, 5, 4 + bookReport.length, 1, 11);
+      booksSheet.autoFilter = `A4:K${Math.max(4, 4 + bookReport.length)}`;
       booksSheet.columns = [
-        { width: 38 }, { width: 26 }, { width: 16 }, { width: 18 }, { width: 20 },
-        { width: 17 }, { width: 15 }, { width: 15 }, { width: 15 }, { width: 16 },
+        { width: 38 }, { width: 26 }, { width: 16 }, { width: 30 }, { width: 17 },
+        { width: 15 }, { width: 15 }, { width: 15 }, { width: 16 },
         { width: 15 }, { width: 13 }
       ];
 
@@ -3161,6 +3631,86 @@ button:disabled {
     }
   });
 
+  function countNamedValues(values) {
+    const map = new Map();
+    values.forEach(value => {
+      const label = String(value || "").trim();
+      if (!label) return;
+      const key = label.toLocaleLowerCase();
+      const existing = map.get(key);
+      if (existing) {
+        existing.count++;
+      } else {
+        map.set(key, { label, count: 1 });
+      }
+    });
+    return [...map.values()].sort((a, b) =>
+      b.count - a.count || a.label.localeCompare(b.label)
+    );
+  }
+
+  function renderBreakdownList(selector, entries, emptyLabel, maxItems = 10) {
+    const el = $(selector);
+    if (!el) return;
+
+    if (!entries.length) {
+      el.innerHTML = `<div class="breakdown-empty">${escapeHTML(emptyLabel)}</div>`;
+      return;
+    }
+
+    const visible = entries.slice(0, maxItems);
+    const maximum = Math.max(...visible.map(x => x.count), 1);
+
+    el.innerHTML = visible.map(item => `
+      <div class="breakdown-row" title="${escapeHTML(item.label)}">
+        <div class="breakdown-label">${escapeHTML(item.label)}</div>
+        <div class="breakdown-count">${item.count}</div>
+        <div class="breakdown-track">
+          <div class="breakdown-fill" style="width:${Math.max(4, (item.count / maximum) * 100)}%"></div>
+        </div>
+      </div>
+    `).join("") +
+    (entries.length > maxItems
+      ? `<div class="breakdown-more">+ ${entries.length - maxItems} more</div>`
+      : "");
+  }
+
+  function renderCollectionBreakdowns(activeBooks) {
+    const readingLevels = [];
+    const genres = [];
+    const categories = [];
+
+    activeBooks.forEach(book => {
+      readingLevels.push(book.readingLevel || "Not set");
+
+      const gs = bookGenres(book);
+      if (gs.length) genres.push(...gs);
+      else genres.push("Not set");
+
+      const cs = Array.isArray(book.categories)
+        ? book.categories.map(x => String(x || "").trim()).filter(Boolean)
+        : [];
+      if (cs.length) categories.push(...cs);
+      else categories.push("No category metadata");
+    });
+
+    renderBreakdownList(
+      "#readingLevelBreakdown",
+      countNamedValues(readingLevels),
+      "No reading levels entered yet."
+    );
+    renderBreakdownList(
+      "#genreBreakdown",
+      countNamedValues(genres),
+      "No genres entered yet."
+    );
+    renderBreakdownList(
+      "#categoryBreakdown",
+      countNamedValues(categories),
+      "No category metadata available."
+    );
+  }
+
   function renderDashboard() {
     const loans = currentLoans();
     const overdue = loans.filter(l => l.dueDate < todayISO()).length;
@@ -3174,6 +3724,8 @@ button:disabled {
     $("#statChecked").textContent = loans.length;
     $("#statOverdue").textContent = overdue;
     $("#statStudents").textContent = state.students.filter(s => s.active).length;
+
+    renderCollectionBreakdowns(activeBooks);
 
     $("#dashboardLoans").innerHTML = loans.length ? loanTable(loans, false) : `<div class="empty-state">Nothing is checked out right now.</div>`;
   }
@@ -3233,7 +3785,7 @@ button:disabled {
     const books = state.books.filter(b => {
       const loan = currentLoanForBook(b.id);
       const collectionStatus = b.collectionStatus || "active";
-      const hay = `${b.title} ${(b.authors || []).join(" ")} ${b.isbn} ${(b.categories || []).join(" ")} ${b.readingLevel || ""} ${b.genre || ""} ${b.subgenre || ""} ${b.removalReason || ""}`.toLowerCase();
+      const hay = `${b.title} ${(b.authors || []).join(" ")} ${b.isbn} ${(b.categories || []).join(" ")} ${b.readingLevel || ""} ${bookGenres(b).join(" ")} ${b.removalReason || ""}`.toLowerCase();
       const qMatch = !q || hay.includes(q);
 
       let statusMatch = false;
@@ -3256,8 +3808,7 @@ button:disabled {
 
       const tags = [
         b.readingLevel ? `<span class="meta-tag">Level: ${escapeHTML(b.readingLevel)}</span>` : "",
-        b.genre ? `<span class="meta-tag">${escapeHTML(b.genre)}</span>` : "",
-        b.subgenre ? `<span class="meta-tag">${escapeHTML(b.subgenre)}</span>` : ""
+        ...bookGenres(b).map(g => `<span class="meta-tag">${escapeHTML(g)}</span>`)
       ].filter(Boolean).join("");
 
       const removedNote = (b.collectionStatus && b.collectionStatus !== "active" && b.removalReason)
