@@ -878,7 +878,7 @@ button:disabled {
 
 .collection-breakdown-grid {
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:15px;
 }
 .breakdown-card {
@@ -1070,6 +1070,85 @@ button:disabled {
   }
 }
 
+
+.dashboard-filter-bar {
+  display:grid;
+  grid-template-columns:minmax(180px,1fr) minmax(180px,1fr) auto minmax(180px,auto);
+  gap:10px;
+  align-items:end;
+  margin-bottom:16px;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#faf6f9;
+}
+.dashboard-filter-bar label {
+  font-size:11px;
+  font-weight:900;
+  color:var(--muted);
+}
+.dashboard-filter-bar select {
+  margin-top:5px;
+}
+.dashboard-filter-summary {
+  align-self:center;
+  justify-self:end;
+  color:var(--green);
+  font-size:12px;
+  font-weight:900;
+  text-align:right;
+}
+.breakdown-context {
+  margin:-6px 0 12px;
+  color:var(--muted);
+  font-size:11px;
+}
+.breakdown-row.clickable {
+  cursor:pointer;
+  padding:5px 6px;
+  margin:0 -6px;
+  border-radius:8px;
+  transition:background .12s ease;
+}
+.breakdown-row.clickable:hover {
+  background:#f2e8ef;
+}
+.breakdown-row.selected {
+  background:#eadce6;
+  box-shadow:inset 0 0 0 1px #c9aec1;
+}
+.breakdown-row.selected .breakdown-label,
+.breakdown-row.selected .breakdown-count {
+  color:var(--green);
+}
+.dashboard-active-filter {
+  display:inline-block;
+  margin-left:4px;
+  padding:2px 6px;
+  border-radius:999px;
+  background:#eadce6;
+  color:var(--green);
+  font-size:10px;
+  font-weight:900;
+}
+@media (max-width:900px) {
+  .dashboard-filter-bar {
+    grid-template-columns:1fr 1fr;
+  }
+  .dashboard-filter-summary {
+    justify-self:start;
+    text-align:left;
+  }
+}
+@media (max-width:600px) {
+  .dashboard-filter-bar {
+    grid-template-columns:1fr;
+  }
+  .dashboard-filter-bar .secondary {
+    width:100%;
+  }
+}
+
 </style>
 </head>
 <body class="logged-out">
@@ -1147,21 +1226,42 @@ button:disabled {
           <div>
             <div class="eyebrow">COLLECTION SNAPSHOT</div>
             <h3>What's in Mrs. Fuller's Library?</h3>
-            <p class="muted">A quick breakdown of active books. Categories come from the book metadata lookup.</p>
+            <p class="muted">Filter one side to explore the other. Click any bar below or use the dropdowns.</p>
           </div>
         </div>
+
+        <div class="dashboard-filter-bar">
+          <label>
+            Reading Level
+            <select id="dashboardReadingLevelFilter">
+              <option value="">All reading levels</option>
+            </select>
+          </label>
+
+          <label>
+            Genre
+            <select id="dashboardGenreFilter">
+              <option value="">All genres</option>
+            </select>
+          </label>
+
+          <button type="button" class="secondary" id="clearDashboardFilters">Clear filters</button>
+
+          <div id="dashboardFilterSummary" class="dashboard-filter-summary">
+            Showing all active books
+          </div>
+        </div>
+
         <div class="collection-breakdown-grid">
           <section class="breakdown-card">
             <h4>Reading Levels</h4>
+            <div class="breakdown-context" id="readingLevelContext">All active books</div>
             <div id="readingLevelBreakdown" class="breakdown-list"></div>
           </section>
           <section class="breakdown-card">
             <h4>Genres</h4>
+            <div class="breakdown-context" id="genreContext">All active books</div>
             <div id="genreBreakdown" class="breakdown-list"></div>
-          </section>
-          <section class="breakdown-card">
-            <h4>Categories</h4>
-            <div id="categoryBreakdown" class="breakdown-list"></div>
           </section>
         </div>
       </div>
@@ -1569,14 +1669,14 @@ button:disabled {
   <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 13</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 16</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v13 collection tools build loaded");
-  const BUILD_VERSION = "v13";
+  console.info("Mrs. Fuller's Library v16 interactive dashboard build loaded");
+  const BUILD_VERSION = "v16";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -3014,6 +3114,14 @@ button:disabled {
   $("#librarySearch").addEventListener("input", renderLibrary);
   $("#libraryFilter").addEventListener("change", renderLibrary);
 
+  $("#dashboardReadingLevelFilter").addEventListener("change", renderDashboard);
+  $("#dashboardGenreFilter").addEventListener("change", renderDashboard);
+  $("#clearDashboardFilters").addEventListener("click", () => {
+    $("#dashboardReadingLevelFilter").value = "";
+    $("#dashboardGenreFilter").value = "";
+    renderDashboard();
+  });
+
   function schoolYearForDate(iso) {
     const d = iso ? new Date(`${iso}T12:00:00`) : new Date();
     const year = d.getFullYear();
@@ -3649,7 +3757,40 @@ button:disabled {
     );
   }
 
-  function renderBreakdownList(selector, entries, emptyLabel, maxItems = 10) {
+  function normalizedKey(value) {
+    return String(value || "").trim().toLocaleLowerCase();
+  }
+
+  function populateDashboardFilter(selectId, values, blankLabel, currentValue) {
+    const select = $(selectId);
+    if (!select) return "";
+
+    const unique = countNamedValues(values)
+      .filter(item => item.label !== "Not set")
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    select.innerHTML =
+      `<option value="">${escapeHTML(blankLabel)}</option>` +
+      unique.map(item =>
+        `<option value="${escapeHTML(item.label)}">${escapeHTML(item.label)} (${item.count})</option>`
+      ).join("");
+
+    const stillExists = unique.some(item => normalizedKey(item.label) === normalizedKey(currentValue));
+    const resolved = stillExists ? currentValue : "";
+    select.value = resolved;
+    return resolved;
+  }
+
+  function renderBreakdownList(
+    selector,
+    entries,
+    emptyLabel,
+    {
+      maxItems = 20,
+      dimension = "",
+      selectedValue = ""
+    } = {}
+  ) {
     const el = $(selector);
     if (!el) return;
 
@@ -3661,54 +3802,179 @@ button:disabled {
     const visible = entries.slice(0, maxItems);
     const maximum = Math.max(...visible.map(x => x.count), 1);
 
-    el.innerHTML = visible.map(item => `
-      <div class="breakdown-row" title="${escapeHTML(item.label)}">
-        <div class="breakdown-label">${escapeHTML(item.label)}</div>
-        <div class="breakdown-count">${item.count}</div>
-        <div class="breakdown-track">
-          <div class="breakdown-fill" style="width:${Math.max(4, (item.count / maximum) * 100)}%"></div>
+    el.innerHTML = visible.map(item => {
+      const isSelected =
+        normalizedKey(item.label) === normalizedKey(selectedValue);
+
+      return `
+        <div
+          class="breakdown-row clickable ${isSelected ? "selected" : ""}"
+          data-dashboard-dimension="${escapeHTML(dimension)}"
+          data-dashboard-value="${escapeHTML(item.label)}"
+          title="Filter by ${escapeHTML(item.label)}"
+          role="button"
+          tabindex="0"
+        >
+          <div class="breakdown-label">
+            ${escapeHTML(item.label)}
+            ${isSelected ? `<span class="dashboard-active-filter">SELECTED</span>` : ""}
+          </div>
+          <div class="breakdown-count">${item.count}</div>
+          <div class="breakdown-track">
+            <div class="breakdown-fill" style="width:${Math.max(4, (item.count / maximum) * 100)}%"></div>
+          </div>
         </div>
-      </div>
-    `).join("") +
+      `;
+    }).join("") +
     (entries.length > maxItems
       ? `<div class="breakdown-more">+ ${entries.length - maxItems} more</div>`
       : "");
+
+    $$(`${selector} [data-dashboard-dimension]`).forEach(row => {
+      const apply = () => {
+        const dimensionName = row.dataset.dashboardDimension;
+        const value = row.dataset.dashboardValue;
+
+        if (dimensionName === "readingLevel") {
+          const select = $("#dashboardReadingLevelFilter");
+          select.value =
+            normalizedKey(select.value) === normalizedKey(value) ? "" : value;
+        } else if (dimensionName === "genre") {
+          const select = $("#dashboardGenreFilter");
+          select.value =
+            normalizedKey(select.value) === normalizedKey(value) ? "" : value;
+        }
+
+        renderDashboard();
+      };
+
+      row.addEventListener("click", apply);
+      row.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          apply();
+        }
+      });
+    });
   }
 
   function renderCollectionBreakdowns(activeBooks) {
-    const readingLevels = [];
+    const readingFilterEl = $("#dashboardReadingLevelFilter");
+    const genreFilterEl = $("#dashboardGenreFilter");
+
+    const previousReadingFilter = readingFilterEl?.value || "";
+    const previousGenreFilter = genreFilterEl?.value || "";
+
+    const allReadingLevels = activeBooks
+      .map(book => book.readingLevel || "")
+      .filter(Boolean);
+
+    const allGenres = activeBooks
+      .flatMap(book => bookGenres(book));
+
+    const readingFilter = populateDashboardFilter(
+      "#dashboardReadingLevelFilter",
+      allReadingLevels,
+      "All reading levels",
+      previousReadingFilter
+    );
+
+    const genreFilter = populateDashboardFilter(
+      "#dashboardGenreFilter",
+      allGenres,
+      "All genres",
+      previousGenreFilter
+    );
+
+    // Standard faceted filtering:
+    // - Reading-level counts respond to the selected genre.
+    // - Genre counts respond to the selected reading level.
+    // This lets each panel show the distribution within the opposite selection.
+    const booksForReadingLevelCounts = genreFilter
+      ? activeBooks.filter(book =>
+          bookGenres(book).some(genre =>
+            normalizedKey(genre) === normalizedKey(genreFilter)
+          )
+        )
+      : activeBooks;
+
+    const booksForGenreCounts = readingFilter
+      ? activeBooks.filter(book =>
+          normalizedKey(book.readingLevel || "") === normalizedKey(readingFilter)
+        )
+      : activeBooks;
+
+    const readingLevels = booksForReadingLevelCounts.map(book =>
+      book.readingLevel || "Not set"
+    );
+
     const genres = [];
-    const categories = [];
-
-    activeBooks.forEach(book => {
-      readingLevels.push(book.readingLevel || "Not set");
-
+    booksForGenreCounts.forEach(book => {
       const gs = bookGenres(book);
       if (gs.length) genres.push(...gs);
       else genres.push("Not set");
-
-      const cs = Array.isArray(book.categories)
-        ? book.categories.map(x => String(x || "").trim()).filter(Boolean)
-        : [];
-      if (cs.length) categories.push(...cs);
-      else categories.push("No category metadata");
     });
 
     renderBreakdownList(
       "#readingLevelBreakdown",
       countNamedValues(readingLevels),
-      "No reading levels entered yet."
+      "No reading levels match this genre.",
+      {
+        dimension: "readingLevel",
+        selectedValue: readingFilter
+      }
     );
+
     renderBreakdownList(
       "#genreBreakdown",
       countNamedValues(genres),
-      "No genres entered yet."
+      "No genres match this reading level.",
+      {
+        dimension: "genre",
+        selectedValue: genreFilter
+      }
     );
-    renderBreakdownList(
-      "#categoryBreakdown",
-      countNamedValues(categories),
-      "No category metadata available."
-    );
+
+    const matchingBooks = activeBooks.filter(book => {
+      const readingMatches =
+        !readingFilter ||
+        normalizedKey(book.readingLevel || "") === normalizedKey(readingFilter);
+
+      const genreMatches =
+        !genreFilter ||
+        bookGenres(book).some(genre =>
+          normalizedKey(genre) === normalizedKey(genreFilter)
+        );
+
+      return readingMatches && genreMatches;
+    });
+
+    const summary = $("#dashboardFilterSummary");
+    if (summary) {
+      if (!readingFilter && !genreFilter) {
+        summary.textContent = `Showing all ${activeBooks.length} active books`;
+      } else {
+        const parts = [];
+        if (readingFilter) parts.push(`Level: ${readingFilter}`);
+        if (genreFilter) parts.push(`Genre: ${genreFilter}`);
+        summary.textContent =
+          `${matchingBooks.length} book${matchingBooks.length === 1 ? "" : "s"} • ${parts.join(" • ")}`;
+      }
+    }
+
+    const readingContext = $("#readingLevelContext");
+    if (readingContext) {
+      readingContext.textContent = genreFilter
+        ? `Reading levels within “${genreFilter}”`
+        : "Reading levels across all active books";
+    }
+
+    const genreContext = $("#genreContext");
+    if (genreContext) {
+      genreContext.textContent = readingFilter
+        ? `Genres within “${readingFilter}”`
+        : "Genres across all active books";
+    }
   }
 
   function renderDashboard() {
