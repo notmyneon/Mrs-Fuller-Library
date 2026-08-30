@@ -1597,9 +1597,10 @@ button:disabled {
         <div class="panel circulation-box">
           <div class="step-badge">1</div>
           <h2>Scan student card</h2>
-          <p class="muted">Scan the student's classroom library card.</p>
+          <p class="muted">Scan the student's classroom library card or type their name.</p>
           <form id="checkoutStudentForm" class="scan-form camera-form">
-            <input id="checkoutStudent" autocomplete="off" placeholder="Scan student card" />
+            <input id="checkoutStudent" autocomplete="off" list="checkoutStudentSuggestions" placeholder="Scan card or type student name" />
+            <datalist id="checkoutStudentSuggestions"></datalist>
             <button class="camera-btn" type="button" data-camera-target="checkoutStudent" data-camera-form="checkoutStudentForm" data-camera-kind="student">📷 <span>Camera</span></button>
             <button class="primary" type="submit">Select</button>
           </form>
@@ -1766,14 +1767,14 @@ button:disabled {
   <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 20</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 21</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v20 larger clean header logo build loaded");
-  const BUILD_VERSION = "v20";
+  console.info("Mrs. Fuller's Library v21 student-name checkout build loaded");
+  const BUILD_VERSION = "v21";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -1897,6 +1898,38 @@ button:disabled {
   function studentByCode(raw) {
     const code = cleanCode(raw).toUpperCase();
     return state.students.find(s => s.code.toUpperCase() === code) || null;
+  }
+
+  function activeStudentsSorted() {
+    return state.students
+      .filter(s => s.active)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function resolveStudentEntry(raw) {
+    const entry = String(raw || "").trim();
+    if (!entry) return { student: null, matches: [] };
+
+    const byCode = studentByCode(entry);
+    if (byCode && byCode.active) return { student: byCode, matches: [byCode] };
+
+    const normalized = entry.toLocaleLowerCase();
+    const active = activeStudentsSorted();
+
+    const exact = active.filter(s => s.name.trim().toLocaleLowerCase() === normalized);
+    if (exact.length === 1) return { student: exact[0], matches: exact };
+    if (exact.length > 1) return { student: null, matches: exact };
+
+    const partial = active.filter(s => s.name.toLocaleLowerCase().includes(normalized));
+    return { student: partial.length === 1 ? partial[0] : null, matches: partial };
+  }
+
+  function renderCheckoutStudentSuggestions() {
+    const list = $("#checkoutStudentSuggestions");
+    if (!list) return;
+    list.innerHTML = activeStudentsSorted()
+      .map(student => `<option value="${escapeHTML(student.name)}">${escapeHTML(student.code)}</option>`)
+      .join("");
   }
 
   function toast(message) {
@@ -2963,16 +2996,36 @@ button:disabled {
 
   $("#checkoutStudentForm").addEventListener("submit", e => {
     e.preventDefault();
-    const student = studentByCode($("#checkoutStudent").value);
-    if (!student || !student.active) {
+
+    const raw = $("#checkoutStudent").value;
+    const resolved = resolveStudentEntry(raw);
+    const student = resolved.student;
+
+    if (!student) {
       $("#selectedStudent").className = "selected-box";
-      $("#selectedStudent").innerHTML = `<strong>Student card not recognized.</strong>`;
+
+      if (!String(raw || "").trim()) {
+        $("#selectedStudent").innerHTML = `<strong>Scan a library card or type a student's name.</strong>`;
+      } else if (resolved.matches.length > 1) {
+        const names = resolved.matches.slice(0, 6).map(s => escapeHTML(s.name)).join(", ");
+        const more = resolved.matches.length > 6 ? ` and ${resolved.matches.length - 6} more` : "";
+        $("#selectedStudent").innerHTML =
+          `<strong>More than one student matches.</strong><br><span class="muted">Try typing more of the name: ${names}${more}</span>`;
+      } else {
+        $("#selectedStudent").innerHTML =
+          `<strong>Student not recognized.</strong><br><span class="muted">Try the student's full name or scan their library card.</span>`;
+      }
+
       $("#checkoutStudent").select();
       return;
     }
+
     selectedStudentId = student.id;
+    $("#checkoutStudent").value = student.name;
     $("#selectedStudent").className = "selected-box active";
-    $("#selectedStudent").innerHTML = `<strong>${escapeHTML(student.name)}</strong><br><span class="muted">${escapeHTML(student.code)}</span>`;
+    $("#selectedStudent").innerHTML =
+      `<strong>${escapeHTML(student.name)}</strong><br><span class="muted">${escapeHTML(student.code)}</span>`;
+
     $("#checkoutBook").disabled = false;
     $("#checkoutBookBtn").disabled = false;
     $("#checkoutBookCameraBtn").disabled = false;
@@ -4365,6 +4418,8 @@ button:disabled {
     const active = state.students
       .filter(s => s.active)
       .sort((a, b) => a.name.localeCompare(b.name));
+
+    renderCheckoutStudentSuggestions();
 
     $("#studentCards").innerHTML = active.length ? active.map(s => `
       <article class="library-card selectable ${selectedProfileStudentId === s.id ? "selected-student" : ""}"
