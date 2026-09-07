@@ -201,32 +201,130 @@ footer {
 @media print {
   body * { visibility:hidden !important; }
 
+  /* ------------------------------
+     AVERY 5160 — STUDENT LABELS
+     3 columns x 10 rows
+     2.625" x 1"
+     ------------------------------ */
   body.print-student-cards #studentCards,
   body.print-student-cards #studentCards * {
     visibility:visible !important;
   }
+
   body.print-student-cards #studentCards {
+    display:grid !important;
     position:absolute;
     left:0;
     top:0;
-    width:100%;
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:12px;
-    padding:12mm;
-  }
-  body.print-student-cards .library-card {
-    break-inside:avoid;
-    box-shadow:none;
-  }
-  body.print-student-cards .card-actions {
-    display:none;
+    width:8.5in;
+    height:11in;
+    box-sizing:border-box;
+    grid-template-columns:repeat(3,2.625in);
+    grid-template-rows:repeat(10,1in);
+    column-gap:.125in;
+    row-gap:0;
+    padding:.5in .1875in;
+    align-content:start;
+    justify-content:start;
   }
 
+  body.print-student-cards .library-card {
+    width:2.625in;
+    height:1in;
+    min-height:0;
+    box-sizing:border-box;
+    border:0;
+    border-radius:0;
+    box-shadow:none;
+    padding:.045in .06in;
+    margin:0;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    break-inside:avoid;
+    page-break-inside:avoid;
+    background:white;
+    color:#111;
+  }
+
+  body.print-student-cards .student-card-brand {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:.01in;
+    width:100%;
+    margin:0;
+  }
+
+  body.print-student-cards .student-card-logo {
+    width:.22in;
+    height:.22in;
+    flex:0 0 .22in;
+    display:grid;
+    place-items:center;
+    margin:0 auto;
+  }
+
+  body.print-student-cards .student-card-logo img {
+    width:100%;
+    height:100%;
+    object-fit:contain;
+  }
+
+  body.print-student-cards .library-card .eyebrow {
+    font-size:5.3pt;
+    line-height:1;
+    letter-spacing:.035em;
+    text-align:center;
+    color:#68425f;
+    opacity:1;
+    margin:0;
+  }
+
+  body.print-student-cards .library-card h4 {
+    font-size:8.2pt;
+    line-height:1;
+    margin:.015in 0 .01in;
+    text-align:center;
+    max-width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  body.print-student-cards .library-card svg {
+    width:auto;
+    max-width:2.35in;
+    height:.27in;
+    margin:.005in auto 0;
+  }
+
+  body.print-student-cards .card-id {
+    font-size:5.5pt;
+    line-height:1;
+    text-align:center;
+    color:#333;
+    margin-top:.005in;
+  }
+
+  body.print-student-cards .card-actions {
+    display:none !important;
+  }
+
+  /* ------------------------------
+     AVERY 5160 — BOOK LABELS
+     3 columns x 10 rows
+     2.625" x 1"
+     ------------------------------ */
   body.print-book-labels #bookLabelsPrintArea,
   body.print-book-labels #bookLabelsPrintArea * {
     visibility:visible !important;
   }
+
   body.print-book-labels #bookLabelsPrintArea {
     display:grid !important;
     position:absolute;
@@ -1007,84 +1105,100 @@ button:disabled {
   width:2.625in;
   height:1in;
   box-sizing:border-box;
-  padding:.045in .065in;
+  padding:.035in .06in;
   overflow:hidden;
-  display:grid;
-  grid-template-columns:.44in minmax(0,1fr);
-  grid-template-rows:auto auto auto 1fr;
-  grid-template-areas:
-    "logo brand"
-    "logo title"
-    "logo details"
-    "barcode barcode";
-  column-gap:.055in;
-  row-gap:.01in;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
   break-inside:avoid;
   page-break-inside:avoid;
   background:white;
   color:#111;
 }
+
 .book-print-brand-row {
-  display:contents;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.005in;
+  width:100%;
+  margin:0;
 }
+
 .print-logo-box {
-  grid-area:logo;
-  width:.42in;
-  height:.42in;
-  align-self:start;
+  width:.20in;
+  height:.20in;
+  flex:0 0 .20in;
   display:grid;
   place-items:center;
+  margin:0 auto;
 }
+
 .print-logo-box img {
   width:100%;
   height:100%;
   object-fit:contain;
 }
+
 .book-print-brand {
-  grid-area:brand;
-  font-size:6.4pt;
+  font-size:5.2pt;
   font-weight:900;
   letter-spacing:.03em;
   text-transform:uppercase;
   color:#68425f;
   line-height:1;
+  text-align:center;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
+  max-width:100%;
 }
+
 .book-print-title {
-  grid-area:title;
-  font-size:7.8pt;
+  font-size:7.1pt;
   font-weight:900;
-  line-height:1.03;
-  margin:0;
-  max-height:2.08em;
+  line-height:1.02;
+  margin:.01in 0;
+  max-height:2.04em;
   overflow:hidden;
+  text-align:center;
+  width:100%;
 }
+
 .book-print-details {
-  grid-area:details;
-  font-size:5.8pt;
-  line-height:1.04;
+  font-size:5.25pt;
+  line-height:1.02;
   margin:0;
-  max-height:2.1em;
+  max-height:2.04em;
   overflow:hidden;
+  text-align:center;
+  width:100%;
 }
+
 .book-print-details strong {
   font-weight:900;
 }
+
 .book-print-barcode {
-  grid-area:barcode;
   display:flex;
-  align-items:end;
+  align-items:center;
   justify-content:center;
-  min-height:.285in;
+  width:100%;
+  min-height:.245in;
   overflow:hidden;
-  margin:0;
+  margin:.005in auto 0;
 }
+
 .book-print-barcode svg {
-  max-width:100%;
-  height:.275in;
+  width:auto;
+  max-width:2.35in;
+  height:.24in;
+  margin:0 auto;
 }
+
 .book-print-code {
   display:none;
 }
@@ -1559,7 +1673,7 @@ button:disabled {
         <div id="bookLabelPicker" class="book-label-picker"></div>
 
         <div class="dialog-actions">
-          <div class="small muted">Print layout: Avery 5160 • 30 labels per Letter sheet • 1" × 2⅝".</div>
+          <div class="small muted">Print layout: Avery 5160 • 30 labels per Letter sheet • centered 1" × 2⅝" labels.</div>
           <div class="dialog-actions-right">
             <button type="button" class="secondary" id="cancelBookLabelsBtn">Cancel</button>
             <button type="button" class="primary" id="printSelectedBookLabelsBtn" disabled>Print selected labels</button>
@@ -1597,7 +1711,7 @@ button:disabled {
               <h3>Library cards</h3>
               <p class="muted">Click a student card to view that student's library record.</p>
             </div>
-            <button id="printCardsBtn" class="secondary">Print cards</button>
+            <button id="printCardsBtn" class="secondary">Print Avery 5160 labels</button>
           </div>
           <div id="studentCards" class="card-grid"></div>
         </div>
@@ -1803,14 +1917,14 @@ button:disabled {
   <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 22</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 23</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v22 Avery 5160 label build loaded");
-  const BUILD_VERSION = "v22";
+  console.info("Mrs. Fuller's Library v23 Avery 5160 centered labels build loaded");
+  const BUILD_VERSION = "v23";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -2971,9 +3085,9 @@ button:disabled {
         JsBarcode(svg, code, {
           format: "CODE128",
           displayValue: false,
-          height: 24,
+          height: 22,
           margin: 0,
-          width: 1.1
+          width: 1.05
         });
       } catch (err) {
         console.warn("Could not render book barcode", code, err);
@@ -4482,7 +4596,7 @@ button:disabled {
       $$(".barcode").forEach(svg => {
         try {
           JsBarcode(svg, svg.dataset.code, {
-            format:"CODE128", displayValue:false, height:42, margin:0, width:1.6
+            format:"CODE128", displayValue:false, height:25, margin:0, width:1.25
           });
         } catch {}
       });
