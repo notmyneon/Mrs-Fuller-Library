@@ -1912,6 +1912,77 @@ button:disabled {
   </dialog>
 
 
+  <dialog id="returnedRecordDialog" class="book-dialog">
+    <div class="dialog-inner">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">RETURNED LOAN RECORD</div>
+          <h3>Manage record</h3>
+        </div>
+        <button type="button" class="icon-btn" id="closeReturnedRecordDialog" aria-label="Close">×</button>
+      </div>
+
+      <form id="returnedRecordForm" class="form-stack">
+        <input type="hidden" id="returnedRecordId">
+
+        <label>Student
+          <select id="returnedRecordStudent" required></select>
+        </label>
+
+        <label>Book
+          <select id="returnedRecordBook" required></select>
+        </label>
+
+        <div class="loan-edit-grid">
+          <label>Checkout date
+            <input id="returnedRecordCheckoutDate" type="date" required>
+          </label>
+
+          <label>Due date
+            <input id="returnedRecordDueDate" type="date" required>
+          </label>
+        </div>
+
+        <label>Return date
+          <input id="returnedRecordReturnDate" type="date" required>
+        </label>
+
+        <label>Return outcome
+          <select id="returnedRecordStatus" required>
+            <option value="finished">Finished it</option>
+            <option value="not_finished">Didn't finish it</option>
+            <option value="different_book">Returned for a different book</option>
+            <option value="legacy_returned">Returned (old record)</option>
+          </select>
+        </label>
+
+        <label>Rating
+          <select id="returnedRecordRating">
+            <option value="">No rating</option>
+            <option value="1">1 star</option>
+            <option value="2">2 stars</option>
+            <option value="3">3 stars</option>
+            <option value="4">4 stars</option>
+            <option value="5">5 stars</option>
+          </select>
+        </label>
+
+        <div class="loan-edit-note">
+          Use Edit record to correct a mistake. Delete record permanently removes this
+          checkout, return, reading status, and rating from the student's history.
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="danger" id="deleteReturnedRecordBtn">Delete record</button>
+          <div class="dialog-actions-right">
+            <button type="button" class="secondary" id="cancelReturnedRecord">Cancel</button>
+            <button type="submit" class="primary" id="saveReturnedRecordBtn">Edit record</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
   <dialog id="loanEditDialog" class="book-dialog">
     <div class="dialog-inner">
       <div class="dialog-head">
@@ -2006,14 +2077,14 @@ button:disabled {
   <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 26</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 27</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v26 returned-record deletion build loaded");
-  const BUILD_VERSION = "v26";
+  console.info("Mrs. Fuller's Library v27 returned-record manager build loaded");
+  const BUILD_VERSION = "v27";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -4603,7 +4674,7 @@ button:disabled {
     $("#dashboardLoans").innerHTML = loans.length ? loanTable(loans, false) : `<div class="empty-state">Nothing is checked out right now.</div>`;
   }
 
-  async function deleteReturnedLoanRecord(loanId) {
+  function openReturnedRecordManager(loanId) {
     const loan = state.loans.find(l => l.id === loanId);
     if (!loan) return;
 
@@ -4612,14 +4683,127 @@ button:disabled {
       return;
     }
 
+    $("#returnedRecordId").value = loan.id;
+
+    const students = [...state.students]
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    $("#returnedRecordStudent").innerHTML = students.map(student =>
+      `<option value="${student.id}">${escapeHTML(student.name)}${student.active ? "" : " (former student)"}</option>`
+    ).join("");
+    $("#returnedRecordStudent").value = loan.studentId;
+
+    const books = [...state.books]
+      .sort((a, b) => a.title.localeCompare(b.title));
+
+    $("#returnedRecordBook").innerHTML = books.map(book =>
+      `<option value="${book.id}">${escapeHTML(book.title)} — ${escapeHTML(book.isbn || "")}</option>`
+    ).join("");
+    $("#returnedRecordBook").value = loan.bookId;
+
+    $("#returnedRecordCheckoutDate").value = loan.checkoutDate || "";
+    $("#returnedRecordDueDate").value = loan.dueDate || "";
+    $("#returnedRecordReturnDate").value = loan.returnDate || "";
+    $("#returnedRecordStatus").value = loan.completionStatus || "legacy_returned";
+    $("#returnedRecordRating").value = loan.rating == null ? "" : String(loan.rating);
+
+    $("#returnedRecordDialog").showModal();
+  }
+
+  function closeReturnedRecordManager() {
+    $("#returnedRecordDialog").close();
+  }
+
+  $("#closeReturnedRecordDialog").addEventListener("click", closeReturnedRecordManager);
+  $("#cancelReturnedRecord").addEventListener("click", closeReturnedRecordManager);
+
+  $("#returnedRecordForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const loan = state.loans.find(l => l.id === $("#returnedRecordId").value);
+    if (!loan || !loan.returnDate) {
+      toast("This returned record could not be found.");
+      closeReturnedRecordManager();
+      return;
+    }
+
+    const studentId = $("#returnedRecordStudent").value;
+    const bookId = $("#returnedRecordBook").value;
+    const checkoutDate = $("#returnedRecordCheckoutDate").value;
+    const dueDate = $("#returnedRecordDueDate").value;
+    const returnDate = $("#returnedRecordReturnDate").value;
+    const completionStatus = $("#returnedRecordStatus").value;
+    const ratingRaw = $("#returnedRecordRating").value;
+    const rating = ratingRaw === "" ? null : Number(ratingRaw);
+
+    if (!studentId || !bookId || !checkoutDate || !dueDate || !returnDate || !completionStatus) {
+      toast("Complete all required record fields.");
+      return;
+    }
+
+    if (dueDate < checkoutDate) {
+      toast("Due date cannot be before the checkout date.");
+      return;
+    }
+
+    if (returnDate < checkoutDate) {
+      toast("Return date cannot be before the checkout date.");
+      return;
+    }
+
+    const button = $("#saveReturnedRecordBtn");
+    button.disabled = true;
+    button.textContent = "Saving…";
+    setCloudStatus("Saving…", "syncing");
+
+    try {
+      const { data, error } = await db
+        .from("loans")
+        .update({
+          student_id: studentId,
+          book_id: bookId,
+          checkout_date: checkoutDate,
+          due_date: dueDate,
+          return_date: returnDate,
+          completion_status: completionStatus,
+          rating
+        })
+        .eq("id", loan.id)
+        .select("*")
+        .single();
+
+      if (error) throw error;
+
+      const savedLoan = dbLoanToApp(data);
+      const index = state.loans.findIndex(l => l.id === loan.id);
+      state.loans[index] = savedLoan;
+
+      setCloudStatus("Cloud database");
+      closeReturnedRecordManager();
+      renderAll();
+      toast("Returned record updated");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      toast(`Could not update record: ${err.message}`);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Edit record";
+    }
+  });
+
+  $("#deleteReturnedRecordBtn").addEventListener("click", async () => {
+    const loan = state.loans.find(l => l.id === $("#returnedRecordId").value);
+    if (!loan || !loan.returnDate) return;
+
     const book = state.books.find(b => b.id === loan.bookId);
     const student = state.students.find(s => s.id === loan.studentId);
 
     const details = [
       book?.title || "Unknown book",
       student?.name || "Unknown student",
-      loan.returnDate ? `Returned ${fmtDate(loan.returnDate)}` : ""
-    ].filter(Boolean).join("\n");
+      `Returned ${fmtDate(loan.returnDate)}`
+    ].join("\n");
 
     const confirmed = confirm(
       `Delete this returned loan record permanently?\n\n${details}\n\n` +
@@ -4628,6 +4812,9 @@ button:disabled {
 
     if (!confirmed) return;
 
+    const button = $("#deleteReturnedRecordBtn");
+    button.disabled = true;
+    button.textContent = "Deleting…";
     setCloudStatus("Deleting…", "syncing");
 
     try {
@@ -4641,16 +4828,20 @@ button:disabled {
       state.loans = state.loans.filter(l => l.id !== loan.id);
 
       setCloudStatus("Cloud database");
+      closeReturnedRecordManager();
       renderAll();
       toast("Returned loan record deleted");
     } catch (err) {
       console.error(err);
       setCloudStatus("Delete error", "error");
       toast(`Could not delete record: ${err.message}`);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Delete record";
     }
-  }
+  });
 
-  window.deleteReturnedLoanRecord = deleteReturnedLoanRecord;
+  window.openReturnedRecordManager = openReturnedRecordManager;
 
   function loanTable(loans, showReturned = true) {
     const rows = loans.map(l => {
@@ -4664,8 +4855,8 @@ button:disabled {
 
       const rating = l.rating ? `${l.rating}/5 ★` : "—";
       const action = !l.returnDate
-        ? `<button type="button" class="loan-action-btn" onclick="openLoanEditor('${l.id}')">Edit checkout</button>`
-        : `<button type="button" class="loan-action-btn danger-link" onclick="deleteReturnedLoanRecord('${l.id}')">Delete record</button>`;
+        ? `<button type="button" class="loan-action-btn" onclick="openLoanEditor('${l.id}')">Manage</button>`
+        : `<button type="button" class="loan-action-btn" onclick="openReturnedRecordManager('${l.id}')">Manage</button>`;
 
       return `<tr>
         <td>${escapeHTML(book?.title || "Unknown book")}</td>
@@ -4857,7 +5048,7 @@ button:disabled {
                   Checked out ${fmtDate(loan.checkoutDate)}<br>
                   Due ${fmtDate(loan.dueDate)}${overdue ? " • OVERDUE" : ""}
                 </div>
-                <button type="button" class="loan-action-btn" style="margin-top:7px;" onclick="openLoanEditor('${loan.id}')">Edit checkout</button>
+                <button type="button" class="loan-action-btn" style="margin-top:7px;" onclick="openLoanEditor('${loan.id}')">Manage</button>
               </div>
             </article>`;
         }).join("")}
@@ -4891,7 +5082,7 @@ button:disabled {
                   <td>${fmtDate(loan.returnDate)}</td>
                   <td><span class="student-history-status ${completion.cls}">${escapeHTML(completion.text)}</span></td>
                   <td>${loan.rating ? `${loan.rating}/5 ★` : "—"}</td>
-                  <td><button type="button" class="loan-action-btn danger-link" onclick="deleteReturnedLoanRecord('${loan.id}')">Delete record</button></td>
+                  <td><button type="button" class="loan-action-btn" onclick="openReturnedRecordManager('${loan.id}')">Manage</button></td>
                 </tr>`;
             }).join("")}
           </tbody>
