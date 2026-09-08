@@ -1420,6 +1420,16 @@ button:disabled {
   }
 }
 
+
+.loan-action-btn.danger-link {
+  color:var(--red);
+  border-color:#e1bbb7;
+  background:#fffafa;
+}
+.loan-action-btn.danger-link:hover {
+  background:#f9e8e6;
+}
+
 </style>
 </head>
 <body class="logged-out">
@@ -1996,14 +2006,14 @@ button:disabled {
   <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 25</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 26</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v25 circulation corrections build loaded");
-  const BUILD_VERSION = "v25";
+  console.info("Mrs. Fuller's Library v26 returned-record deletion build loaded");
+  const BUILD_VERSION = "v26";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -4593,6 +4603,55 @@ button:disabled {
     $("#dashboardLoans").innerHTML = loans.length ? loanTable(loans, false) : `<div class="empty-state">Nothing is checked out right now.</div>`;
   }
 
+  async function deleteReturnedLoanRecord(loanId) {
+    const loan = state.loans.find(l => l.id === loanId);
+    if (!loan) return;
+
+    if (!loan.returnDate) {
+      toast("Use Edit checkout for books that are still out.");
+      return;
+    }
+
+    const book = state.books.find(b => b.id === loan.bookId);
+    const student = state.students.find(s => s.id === loan.studentId);
+
+    const details = [
+      book?.title || "Unknown book",
+      student?.name || "Unknown student",
+      loan.returnDate ? `Returned ${fmtDate(loan.returnDate)}` : ""
+    ].filter(Boolean).join("\n");
+
+    const confirmed = confirm(
+      `Delete this returned loan record permanently?\n\n${details}\n\n` +
+      `This will remove it from the student's history and also remove any rating or reading-status data attached to this return.`
+    );
+
+    if (!confirmed) return;
+
+    setCloudStatus("Deleting…", "syncing");
+
+    try {
+      const { error } = await db
+        .from("loans")
+        .delete()
+        .eq("id", loan.id);
+
+      if (error) throw error;
+
+      state.loans = state.loans.filter(l => l.id !== loan.id);
+
+      setCloudStatus("Cloud database");
+      renderAll();
+      toast("Returned loan record deleted");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Delete error", "error");
+      toast(`Could not delete record: ${err.message}`);
+    }
+  }
+
+  window.deleteReturnedLoanRecord = deleteReturnedLoanRecord;
+
   function loanTable(loans, showReturned = true) {
     const rows = loans.map(l => {
       const book = state.books.find(b => b.id === l.bookId);
@@ -4606,7 +4665,7 @@ button:disabled {
       const rating = l.rating ? `${l.rating}/5 ★` : "—";
       const action = !l.returnDate
         ? `<button type="button" class="loan-action-btn" onclick="openLoanEditor('${l.id}')">Edit checkout</button>`
-        : "—";
+        : `<button type="button" class="loan-action-btn danger-link" onclick="deleteReturnedLoanRecord('${l.id}')">Delete record</button>`;
 
       return `<tr>
         <td>${escapeHTML(book?.title || "Unknown book")}</td>
@@ -4815,6 +4874,7 @@ button:disabled {
               <th>RETURNED</th>
               <th>READ?</th>
               <th>RATING</th>
+              <th>ACTION</th>
             </tr>
           </thead>
           <tbody>
@@ -4831,6 +4891,7 @@ button:disabled {
                   <td>${fmtDate(loan.returnDate)}</td>
                   <td><span class="student-history-status ${completion.cls}">${escapeHTML(completion.text)}</span></td>
                   <td>${loan.rating ? `${loan.rating}/5 ★` : "—"}</td>
+                  <td><button type="button" class="loan-action-btn danger-link" onclick="deleteReturnedLoanRecord('${loan.id}')">Delete record</button></td>
                 </tr>`;
             }).join("")}
           </tbody>
