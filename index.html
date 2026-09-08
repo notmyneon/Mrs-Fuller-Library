@@ -458,7 +458,7 @@ button.busy {
   background:#f6f3ec; border:1px solid var(--line); border-radius:14px; margin-bottom:18px;
 }
 .return-book-summary img { width:58px; aspect-ratio:2/3; object-fit:cover; border-radius:6px; background:#e9e4da; }
-.finish-choice { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0 20px; }
+.finish-choice { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:12px 0 20px; }
 .finish-option {
   border:2px solid var(--line); background:white; border-radius:14px; padding:15px;
   font-weight:900; color:var(--ink);
@@ -517,7 +517,7 @@ button.busy {
 }
 .student-mini-stats {
   display:grid;
-  grid-template-columns:repeat(5,minmax(110px,1fr));
+  grid-template-columns:repeat(6,minmax(105px,1fr));
   gap:10px;
   margin:18px 0;
 }
@@ -1380,6 +1380,46 @@ button:disabled {
   object-fit:contain;
 }
 
+
+.student-history-status.switched {
+  color:#68425f;
+}
+
+.loan-action-btn {
+  border:1px solid var(--line);
+  background:white;
+  color:var(--green);
+  border-radius:8px;
+  padding:6px 9px;
+  font-size:11px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.loan-action-btn:hover {
+  background:#f2e8ef;
+}
+
+.loan-edit-note {
+  padding:10px 12px;
+  border:1px solid #e1d3dd;
+  border-radius:11px;
+  background:#f7f0f5;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.4;
+}
+
+.loan-edit-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+@media (max-width:600px) {
+  .loan-edit-grid {
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 </head>
 <body class="logged-out">
@@ -1829,16 +1869,17 @@ button:disabled {
       <div id="returnBookSummary" class="return-book-summary"></div>
 
       <div>
-        <strong>Did you finish this book?</strong>
+        <strong>What happened with this book?</strong>
         <div class="finish-choice">
           <button type="button" class="finish-option" data-finished="finished">✓ Finished it</button>
           <button type="button" class="finish-option" data-finished="not_finished">Didn't finish it</button>
+          <button type="button" class="finish-option" data-finished="different_book">Returned for a different book</button>
         </div>
       </div>
 
       <div class="rating-wrap">
         <strong>How would you rate it?</strong>
-        <div class="muted small">Tap a star. You can rate it even if you didn't finish it.</div>
+        <div class="muted small">Tap a star. A rating is optional for any return type.</div>
         <div id="returnStarRating" class="star-rating" aria-label="5 star rating">
           <button type="button" class="star-btn" data-rating="1" aria-label="1 star">★</button>
           <button type="button" class="star-btn" data-rating="2" aria-label="2 stars">★</button>
@@ -1860,6 +1901,53 @@ button:disabled {
     </div>
   </dialog>
 
+
+  <dialog id="loanEditDialog" class="book-dialog">
+    <div class="dialog-inner">
+      <div class="dialog-head">
+        <div>
+          <div class="eyebrow">CORRECT CHECKOUT</div>
+          <h3>Edit current checkout</h3>
+        </div>
+        <button type="button" class="icon-btn" id="closeLoanEditDialog" aria-label="Close">×</button>
+      </div>
+
+      <form id="loanEditForm" class="form-stack">
+        <input type="hidden" id="editLoanId">
+
+        <label>Student
+          <select id="editLoanStudent" required></select>
+        </label>
+
+        <label>Book
+          <select id="editLoanBook" required></select>
+        </label>
+
+        <div class="loan-edit-grid">
+          <label>Checkout date
+            <input id="editLoanCheckoutDate" type="date" required>
+          </label>
+
+          <label>Due date
+            <input id="editLoanDueDate" type="date" required>
+          </label>
+        </div>
+
+        <div class="loan-edit-note">
+          Use this when a book was accidentally checked out to the wrong student,
+          the wrong book was scanned, or a checkout date needs correcting.
+        </div>
+
+        <div class="dialog-actions">
+          <button type="button" class="danger" id="deleteCheckoutBtn">Delete accidental checkout</button>
+          <div class="dialog-actions-right">
+            <button type="button" class="secondary" id="cancelLoanEdit">Cancel</button>
+            <button type="submit" class="primary" id="saveLoanEditBtn">Save correction</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </dialog>
 
   <dialog id="teacherSettingsDialog" class="book-dialog settings-dialog">
     <div class="dialog-inner">
@@ -1908,14 +1996,14 @@ button:disabled {
   <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 24</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 25</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v24 print pagination fix loaded");
-  const BUILD_VERSION = "v24";
+  console.info("Mrs. Fuller's Library v25 circulation corrections build loaded");
+  const BUILD_VERSION = "v25";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -3332,7 +3420,7 @@ button:disabled {
     }
 
     if (!pendingCompletionStatus) {
-      $("#returnFeedbackWarning").textContent = "Choose Finished it or Didn't finish it.";
+      $("#returnFeedbackWarning").textContent = "Choose what happened with the book.";
       return;
     }
     if (!skipRating && pendingRating == null) {
@@ -3369,10 +3457,10 @@ button:disabled {
       renderAll();
       $("#returnFeedbackDialog").close();
 
-      const finishedText = savedLoan.completionStatus === "finished" ? "Finished" : "Didn't finish";
+      const returnStatus = completionStatusText(savedLoan.completionStatus);
       const ratingPart = savedLoan.rating ? ` • ${savedLoan.rating}/5 stars` : "";
       $("#returnResult").innerHTML =
-        `<div class="result-success">✓ ${escapeHTML(book?.title || "Book")} returned${student ? ` by ${escapeHTML(student.name)}` : ""}. ${finishedText}${ratingPart}.</div>`;
+        `<div class="result-success">✓ ${escapeHTML(book?.title || "Book")} returned${student ? ` by ${escapeHTML(student.name)}` : ""}. ${escapeHTML(returnStatus)}${ratingPart}.</div>`;
       $("#returnBook").value = "";
       resetReturnFeedback();
       $("#returnBook").focus();
@@ -3533,6 +3621,7 @@ button:disabled {
       const returnedLoans = yearLoans.filter(l => !!l.returnDate);
       const finishedLoans = yearLoans.filter(l => l.returnDate && l.completionStatus === "finished");
       const notFinishedLoans = yearLoans.filter(l => l.returnDate && l.completionStatus === "not_finished");
+      const differentBookLoans = yearLoans.filter(l => l.returnDate && l.completionStatus === "different_book");
       const ratedLoans = returnedLoans.filter(l => Number(l.rating) >= 1 && Number(l.rating) <= 5);
       const openYearLoans = yearLoans.filter(l => !l.returnDate);
 
@@ -3557,7 +3646,7 @@ button:disabled {
         summary,
         `Classroom Reading Report — ${schoolYear}`,
         "Books Finished counts books students explicitly marked Finished when returning them.",
-        "G"
+        "H"
       );
 
       summary.getCell("A4").value = "Class Snapshot";
@@ -3567,6 +3656,7 @@ button:disabled {
         ["Students", reportStudents.length],
         ["Books Finished", finishedLoans.length],
         ["Did Not Finish", notFinishedLoans.length],
+        ["Returned for Different Book", differentBookLoans.length],
         ["Unique Titles Finished", new Set(finishedLoans.map(l => l.bookId)).size],
         ["Ratings Submitted", ratedLoans.length],
         ["Total Checkouts", yearLoans.length],
@@ -3584,7 +3674,7 @@ button:disabled {
       const studentHeaderRow = 14;
       summary.getCell(`A${studentHeaderRow - 1}`).value = "Student Reading Summary";
       summary.getCell(`A${studentHeaderRow - 1}`).font = { size: 14, bold: true, color: { argb: "FF68425F" } };
-      ["Student", "Books Finished", "Did Not Finish", "Unique Titles Finished", "Total Checkouts", "Currently Out", "Titles Finished"].forEach((h, i) => {
+      ["Student", "Books Finished", "Did Not Finish", "Switched Books", "Unique Titles Finished", "Total Checkouts", "Currently Out", "Titles Finished"].forEach((h, i) => {
         summary.getCell(studentHeaderRow, i + 1).value = h;
       });
       styleWorksheetHeader(summary.getRow(studentHeaderRow));
@@ -3593,6 +3683,7 @@ button:disabled {
         const studentLoans = yearLoans.filter(l => l.studentId === student.id);
         const finished = studentLoans.filter(l => l.returnDate && l.completionStatus === "finished");
         const dnf = studentLoans.filter(l => l.returnDate && l.completionStatus === "not_finished");
+        const switched = studentLoans.filter(l => l.returnDate && l.completionStatus === "different_book");
         const uniqueBookIds = [...new Set(finished.map(l => l.bookId))];
         const titles = finished
           .map(l => state.books.find(b => b.id === l.bookId)?.title)
@@ -3604,6 +3695,7 @@ button:disabled {
           student,
           finishedCount: finished.length,
           dnfCount: dnf.length,
+          switchedCount: switched.length,
           uniqueCount: uniqueBookIds.length,
           checkoutCount: studentLoans.length,
           currentCount: studentLoans.filter(l => !l.returnDate).length,
@@ -3617,16 +3709,17 @@ button:disabled {
         summary.getCell(r, 1).value = x.student.name;
         summary.getCell(r, 2).value = x.finishedCount;
         summary.getCell(r, 3).value = x.dnfCount;
-        summary.getCell(r, 4).value = x.uniqueCount;
-        summary.getCell(r, 5).value = x.checkoutCount;
-        summary.getCell(r, 6).value = x.currentCount;
-        summary.getCell(r, 7).value = x.titles.join("; ");
-        summary.getCell(r, 7).alignment = { wrapText: true, vertical: "top" };
+        summary.getCell(r, 4).value = x.switchedCount;
+        summary.getCell(r, 5).value = x.uniqueCount;
+        summary.getCell(r, 6).value = x.checkoutCount;
+        summary.getCell(r, 7).value = x.currentCount;
+        summary.getCell(r, 8).value = x.titles.join("; ");
+        summary.getCell(r, 8).alignment = { wrapText: true, vertical: "top" };
       });
-      setTableBorders(summary, studentHeaderRow + 1, studentHeaderRow + studentSummaryData.length, 1, 7);
-      summary.autoFilter = `A${studentHeaderRow}:G${studentHeaderRow + studentSummaryData.length}`;
+      setTableBorders(summary, studentHeaderRow + 1, studentHeaderRow + studentSummaryData.length, 1, 8);
+      summary.autoFilter = `A${studentHeaderRow}:H${studentHeaderRow + studentSummaryData.length}`;
       summary.columns = [
-        { width: 24 }, { width: 15 }, { width: 15 }, { width: 20 }, { width: 16 }, { width: 14 }, { width: 60 }
+        { width: 24 }, { width: 15 }, { width: 15 }, { width: 16 }, { width: 20 }, { width: 16 }, { width: 14 }, { width: 60 }
       ];
 
       // Top books section to the right of snapshot.
@@ -3662,10 +3755,10 @@ button:disabled {
       addWorkbookTitle(
         studentsSheet,
         `Student Reading — ${schoolYear}`,
-        "One row per student. Books Finished counts books explicitly marked Finished at return.",
-        "I"
+        "One row per student. Return outcomes are tracked separately.",
+        "J"
       );
-      const sHeaders = ["Student", "Status", "Books Finished", "Did Not Finish", "Unique Titles Finished", "Average Rating", "Total Checkouts", "Currently Out", "Titles Finished"];
+      const sHeaders = ["Student", "Status", "Books Finished", "Did Not Finish", "Switched Books", "Unique Titles Finished", "Average Rating", "Total Checkouts", "Currently Out", "Titles Finished"];
       sHeaders.forEach((h, i) => studentsSheet.getCell(4, i + 1).value = h);
       styleWorksheetHeader(studentsSheet.getRow(4));
       studentSummaryData.forEach((x, idx) => {
@@ -3674,17 +3767,19 @@ button:disabled {
         studentsSheet.getCell(r, 2).value = x.student.active ? "Active" : "Former";
         studentsSheet.getCell(r, 3).value = x.finishedCount;
         studentsSheet.getCell(r, 4).value = x.dnfCount;
-        studentsSheet.getCell(r, 5).value = x.uniqueCount;
-        studentsSheet.getCell(r, 6).value = x.avgRating == null ? "" : Number(x.avgRating.toFixed(2));
-        studentsSheet.getCell(r, 7).value = x.checkoutCount;
-        studentsSheet.getCell(r, 8).value = x.currentCount;
-        studentsSheet.getCell(r, 9).value = x.titles.join("; ");
-        studentsSheet.getCell(r, 9).alignment = { wrapText: true, vertical: "top" };
+        studentsSheet.getCell(r, 5).value = x.switchedCount;
+        studentsSheet.getCell(r, 6).value = x.uniqueCount;
+        studentsSheet.getCell(r, 7).value = x.avgRating == null ? "" : Number(x.avgRating.toFixed(2));
+        studentsSheet.getCell(r, 8).value = x.checkoutCount;
+        studentsSheet.getCell(r, 9).value = x.currentCount;
+        studentsSheet.getCell(r, 10).value = x.titles.join("; ");
+        studentsSheet.getCell(r, 10).alignment = { wrapText: true, vertical: "top" };
       });
-      setTableBorders(studentsSheet, 5, 4 + studentSummaryData.length, 1, 9);
-      studentsSheet.autoFilter = `A4:I${Math.max(4, 4 + studentSummaryData.length)}`;
+      setTableBorders(studentsSheet, 5, 4 + studentSummaryData.length, 1, 10);
+      studentsSheet.autoFilter = `A4:J${Math.max(4, 4 + studentSummaryData.length)}`;
       studentsSheet.columns = [
-        { width: 24 }, { width: 11 }, { width: 15 }, { width: 15 }, { width: 20 }, { width: 15 }, { width: 16 }, { width: 14 }, { width: 70 }
+        { width: 24 }, { width: 11 }, { width: 15 }, { width: 15 }, { width: 16 },
+        { width: 20 }, { width: 15 }, { width: 16 }, { width: 14 }, { width: 70 }
       ];
 
       // ---------- READING LOG ----------
@@ -3717,6 +3812,7 @@ button:disabled {
         let readStatus = "";
         if (loan.completionStatus === "finished") readStatus = "Finished";
         if (loan.completionStatus === "not_finished") readStatus = "Didn't Finish";
+        if (loan.completionStatus === "different_book") readStatus = "Returned for Different Book";
         if (loan.completionStatus === "legacy_returned") readStatus = "Legacy Return";
         const values = [
           student?.name || "Former student",
@@ -3751,12 +3847,12 @@ button:disabled {
       addWorkbookTitle(
         booksSheet,
         `Book Popularity — ${schoolYear}`,
-        "Library-level summary of finished books, did-not-finish returns, circulation, and student ratings.",
-        "K"
+        "Library-level summary of return outcomes, circulation, and student ratings.",
+        "L"
       );
       const bookHeaders = [
         "Book Title", "Author", "Reading Level", "Genres", "ISBN",
-        "Times Finished", "Did Not Finish", "Average Rating", "Number of Ratings",
+        "Times Finished", "Did Not Finish", "Switched Books", "Average Rating", "Number of Ratings",
         "Total Checkouts", "Currently Out"
       ];
       bookHeaders.forEach((h, i) => booksSheet.getCell(4, i + 1).value = h);
@@ -3770,6 +3866,7 @@ button:disabled {
           book,
           finished: loans.filter(l => l.returnDate && l.completionStatus === "finished").length,
           dnf: loans.filter(l => l.returnDate && l.completionStatus === "not_finished").length,
+          switched: loans.filter(l => l.returnDate && l.completionStatus === "different_book").length,
           averageRating: ratings.length ? ratings.reduce((a,b) => a+b, 0) / ratings.length : null,
           ratingCount: ratings.length,
           checkouts: loans.length,
@@ -3787,6 +3884,7 @@ button:disabled {
           x.book.isbn || "",
           x.finished,
           x.dnf,
+          x.switched,
           x.averageRating == null ? "" : Number(x.averageRating.toFixed(2)),
           x.ratingCount,
           x.checkouts,
@@ -3794,11 +3892,11 @@ button:disabled {
         ];
         vals.forEach((v, c) => booksSheet.getCell(r, c + 1).value = v);
       });
-      setTableBorders(booksSheet, 5, 4 + bookReport.length, 1, 11);
-      booksSheet.autoFilter = `A4:K${Math.max(4, 4 + bookReport.length)}`;
+      setTableBorders(booksSheet, 5, 4 + bookReport.length, 1, 12);
+      booksSheet.autoFilter = `A4:L${Math.max(4, 4 + bookReport.length)}`;
       booksSheet.columns = [
         { width: 38 }, { width: 26 }, { width: 16 }, { width: 30 }, { width: 17 },
-        { width: 15 }, { width: 15 }, { width: 15 }, { width: 16 },
+        { width: 15 }, { width: 15 }, { width: 16 }, { width: 15 }, { width: 16 },
         { width: 15 }, { width: 13 }
       ];
 
@@ -4306,6 +4404,176 @@ button:disabled {
     }
   }
 
+  function openLoanEditor(loanId) {
+    const loan = state.loans.find(l => l.id === loanId);
+    if (!loan) return;
+
+    if (loan.returnDate) {
+      toast("Only books that are currently checked out can be corrected here.");
+      return;
+    }
+
+    const currentStudent = state.students.find(s => s.id === loan.studentId);
+    const eligibleStudents = state.students
+      .filter(s => s.active || s.id === loan.studentId)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    $("#editLoanStudent").innerHTML = eligibleStudents.map(student =>
+      `<option value="${student.id}">${escapeHTML(student.name)}${student.active ? "" : " (former student)"}</option>`
+    ).join("");
+    $("#editLoanStudent").value = loan.studentId;
+
+    const eligibleBooks = state.books
+      .filter(book => {
+        if (book.id === loan.bookId) return true;
+        if ((book.collectionStatus || "active") !== "active") return false;
+        return !currentLoanForBook(book.id);
+      })
+      .sort((a, b) => a.title.localeCompare(b.title));
+
+    $("#editLoanBook").innerHTML = eligibleBooks.map(book =>
+      `<option value="${book.id}">${escapeHTML(book.title)} — ${escapeHTML(book.isbn || "")}</option>`
+    ).join("");
+    $("#editLoanBook").value = loan.bookId;
+
+    $("#editLoanId").value = loan.id;
+    $("#editLoanCheckoutDate").value = loan.checkoutDate || todayISO();
+    $("#editLoanDueDate").value = loan.dueDate || addDaysISO(DEFAULT_DUE_DAYS);
+
+    $("#loanEditDialog").showModal();
+  }
+
+  function closeLoanEditor() {
+    $("#loanEditDialog").close();
+  }
+
+  $("#closeLoanEditDialog").addEventListener("click", closeLoanEditor);
+  $("#cancelLoanEdit").addEventListener("click", closeLoanEditor);
+
+  $("#loanEditForm").addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const loan = state.loans.find(l => l.id === $("#editLoanId").value);
+    if (!loan || loan.returnDate) {
+      toast("This checkout is no longer editable.");
+      closeLoanEditor();
+      return;
+    }
+
+    const studentId = $("#editLoanStudent").value;
+    const bookId = $("#editLoanBook").value;
+    const checkoutDate = $("#editLoanCheckoutDate").value;
+    const dueDate = $("#editLoanDueDate").value;
+
+    if (!studentId || !bookId || !checkoutDate || !dueDate) {
+      toast("Complete all checkout fields.");
+      return;
+    }
+
+    if (dueDate < checkoutDate) {
+      toast("Due date cannot be before the checkout date.");
+      return;
+    }
+
+    const conflictingLoan = state.loans.find(l =>
+      l.id !== loan.id &&
+      !l.returnDate &&
+      l.bookId === bookId
+    );
+
+    if (conflictingLoan) {
+      const borrower = state.students.find(s => s.id === conflictingLoan.studentId);
+      toast(`That book is already checked out${borrower ? ` to ${borrower.name}` : ""}.`);
+      return;
+    }
+
+    const button = $("#saveLoanEditBtn");
+    button.disabled = true;
+    button.textContent = "Saving…";
+    setCloudStatus("Saving…", "syncing");
+
+    try {
+      const { data, error } = await db
+        .from("loans")
+        .update({
+          student_id: studentId,
+          book_id: bookId,
+          checkout_date: checkoutDate,
+          due_date: dueDate
+        })
+        .eq("id", loan.id)
+        .select("*")
+        .single();
+
+      if (error) throw error;
+
+      const savedLoan = dbLoanToApp(data);
+      const index = state.loans.findIndex(l => l.id === loan.id);
+      state.loans[index] = savedLoan;
+
+      selectedStudentId =
+        selectedStudentId === loan.studentId ? savedLoan.studentId : selectedStudentId;
+
+      setCloudStatus("Cloud database");
+      closeLoanEditor();
+      renderAll();
+      toast("Checkout corrected");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Save error", "error");
+      toast(`Could not correct checkout: ${err.message}`);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Save correction";
+    }
+  });
+
+  $("#deleteCheckoutBtn").addEventListener("click", async () => {
+    const loan = state.loans.find(l => l.id === $("#editLoanId").value);
+    if (!loan || loan.returnDate) return;
+
+    const book = state.books.find(b => b.id === loan.bookId);
+    const student = state.students.find(s => s.id === loan.studentId);
+
+    const confirmed = confirm(
+      `Delete this checkout completely?\n\n` +
+      `${book?.title || "Book"} → ${student?.name || "Student"}\n\n` +
+      `Use this only if the checkout was entered by mistake. It will be removed from history.`
+    );
+
+    if (!confirmed) return;
+
+    const button = $("#deleteCheckoutBtn");
+    button.disabled = true;
+    button.textContent = "Deleting…";
+    setCloudStatus("Deleting…", "syncing");
+
+    try {
+      const { error } = await db
+        .from("loans")
+        .delete()
+        .eq("id", loan.id);
+
+      if (error) throw error;
+
+      state.loans = state.loans.filter(l => l.id !== loan.id);
+
+      setCloudStatus("Cloud database");
+      closeLoanEditor();
+      renderAll();
+      toast("Accidental checkout deleted");
+    } catch (err) {
+      console.error(err);
+      setCloudStatus("Delete error", "error");
+      toast(`Could not delete checkout: ${err.message}`);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Delete accidental checkout";
+    }
+  });
+
+  window.openLoanEditor = openLoanEditor;
+
   function renderDashboard() {
     const loans = currentLoans();
     const overdue = loans.filter(l => l.dueDate < todayISO()).length;
@@ -4330,21 +4598,37 @@ button:disabled {
       const book = state.books.find(b => b.id === l.bookId);
       const student = state.students.find(s => s.id === l.studentId);
       const isOverdue = !l.returnDate && l.dueDate < todayISO();
-      let completion = "—";
-      if (l.completionStatus === "finished") completion = "Finished";
-      if (l.completionStatus === "not_finished") completion = "Didn't finish";
-      if (l.completionStatus === "legacy_returned") completion = "Returned (old record)";
+
+      const completion = l.returnDate
+        ? completionStatusText(l.completionStatus)
+        : "—";
+
       const rating = l.rating ? `${l.rating}/5 ★` : "—";
+      const action = !l.returnDate
+        ? `<button type="button" class="loan-action-btn" onclick="openLoanEditor('${l.id}')">Edit checkout</button>`
+        : "—";
+
       return `<tr>
         <td>${escapeHTML(book?.title || "Unknown book")}</td>
         <td>${escapeHTML(student?.name || "Former student")}</td>
         <td>${fmtDate(l.checkoutDate)}</td>
         <td class="${isOverdue ? "overdue" : ""}">${fmtDate(l.dueDate)}</td>
         ${showReturned ? `<td>${l.returnDate ? fmtDate(l.returnDate) : "Out"}</td><td>${escapeHTML(completion)}</td><td>${rating}</td>` : ""}
+        <td>${action}</td>
       </tr>`;
     }).join("");
+
     return `<table>
-      <thead><tr><th>BOOK</th><th>STUDENT</th><th>CHECKED OUT</th><th>DUE</th>${showReturned ? "<th>RETURNED</th><th>READ?</th><th>RATING</th>" : ""}</tr></thead>
+      <thead>
+        <tr>
+          <th>BOOK</th>
+          <th>STUDENT</th>
+          <th>CHECKED OUT</th>
+          <th>DUE</th>
+          ${showReturned ? "<th>RETURNED</th><th>READ?</th><th>RATING</th>" : ""}
+          <th>ACTION</th>
+        </tr>
+      </thead>
       <tbody>${rows}</tbody>
     </table>`;
   }
@@ -4439,10 +4723,19 @@ button:disabled {
     }
   }
 
+  function completionStatusText(status) {
+    if (status === "finished") return "Finished";
+    if (status === "not_finished") return "Didn't finish";
+    if (status === "different_book") return "Returned for a different book";
+    if (status === "legacy_returned") return "Returned (old record)";
+    return "Returned";
+  }
+
   function studentCompletionLabel(loan) {
     if (!loan.returnDate) return { text: "Currently out", cls: "out" };
     if (loan.completionStatus === "finished") return { text: "Finished", cls: "finished" };
     if (loan.completionStatus === "not_finished") return { text: "Didn't finish", cls: "dnf" };
+    if (loan.completionStatus === "different_book") return { text: "Returned for a different book", cls: "switched" };
     if (loan.completionStatus === "legacy_returned") return { text: "Returned", cls: "" };
     return { text: "Returned", cls: "" };
   }
@@ -4479,6 +4772,7 @@ button:disabled {
     const returned = loans.filter(l => !!l.returnDate);
     const finished = returned.filter(l => l.completionStatus === "finished");
     const dnf = returned.filter(l => l.completionStatus === "not_finished");
+    const switched = returned.filter(l => l.completionStatus === "different_book");
     const ratings = returned
       .map(l => Number(l.rating))
       .filter(r => Number.isFinite(r) && r >= 1 && r <= 5);
@@ -4504,6 +4798,7 @@ button:disabled {
                   Checked out ${fmtDate(loan.checkoutDate)}<br>
                   Due ${fmtDate(loan.dueDate)}${overdue ? " • OVERDUE" : ""}
                 </div>
+                <button type="button" class="loan-action-btn" style="margin-top:7px;" onclick="openLoanEditor('${loan.id}')">Edit checkout</button>
               </div>
             </article>`;
         }).join("")}
@@ -4565,6 +4860,10 @@ button:disabled {
         <div class="student-mini-stat">
           <strong>${dnf.length}</strong>
           <span>DID NOT FINISH</span>
+        </div>
+        <div class="student-mini-stat">
+          <strong>${switched.length}</strong>
+          <span>SWITCHED BOOKS</span>
         </div>
         <div class="student-mini-stat">
           <strong>${loans.length}</strong>
