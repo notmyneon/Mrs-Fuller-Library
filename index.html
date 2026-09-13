@@ -1801,7 +1801,14 @@ button:disabled {
           <h2>Scan book</h2>
           <p class="muted">Use the ISBN barcode already printed on the book.</p>
           <form id="checkoutBookForm" class="scan-form camera-form">
-            <input id="checkoutBook" autocomplete="off" placeholder="Scan book ISBN" disabled />
+            <input
+              id="checkoutBook"
+              autocomplete="off"
+              list="checkoutBookSuggestions"
+              placeholder="Scan ISBN or type book title"
+              disabled
+            />
+            <datalist id="checkoutBookSuggestions"></datalist>
             <button class="camera-btn" id="checkoutBookCameraBtn" type="button" data-camera-target="checkoutBook" data-camera-form="checkoutBookForm" data-camera-kind="isbn" disabled>📷 <span>Camera</span></button>
             <button class="primary" id="checkoutBookBtn" type="submit" disabled>Check out</button>
           </form>
@@ -2077,14 +2084,14 @@ button:disabled {
   <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 27</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 28</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v27 returned-record manager build loaded");
-  const BUILD_VERSION = "v27";
+  console.info("Mrs. Fuller's Library v28 title checkout search build loaded");
+  const BUILD_VERSION = "v28";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -2203,6 +2210,61 @@ button:disabled {
     return state.books.find(b =>
       normalizeISBN(b.isbn) === code || normalizeISBN(b.scannedIsbn) === code
     ) || null;
+  }
+
+  function availableBooksSorted() {
+    return state.books
+      .filter(book =>
+        (book.collectionStatus || "active") === "active" &&
+        !currentLoanForBook(book.id)
+      )
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  function resolveBookEntry(raw) {
+    const entry = String(raw || "").trim();
+    if (!entry) return { book: null, matches: [] };
+
+    // Exact barcode/ISBN takes priority.
+    const byCode = bookByCode(entry);
+    if (byCode) return { book: byCode, matches: [byCode] };
+
+    const normalized = entry.toLocaleLowerCase();
+
+    // Include checked-out active books in title searching so the app can
+    // identify them and explain that they are already out.
+    const searchable = state.books
+      .filter(book => (book.collectionStatus || "active") === "active")
+      .sort((a, b) => a.title.localeCompare(b.title));
+
+    const exact = searchable.filter(book =>
+      String(book.title || "").trim().toLocaleLowerCase() === normalized
+    );
+
+    if (exact.length === 1) return { book: exact[0], matches: exact };
+    if (exact.length > 1) return { book: null, matches: exact };
+
+    const partial = searchable.filter(book =>
+      String(book.title || "").toLocaleLowerCase().includes(normalized)
+    );
+
+    return {
+      book: partial.length === 1 ? partial[0] : null,
+      matches: partial
+    };
+  }
+
+  function renderCheckoutBookSuggestions() {
+    const list = $("#checkoutBookSuggestions");
+    if (!list) return;
+
+    list.innerHTML = availableBooksSorted()
+      .map(book => {
+        const author = (book.authors || []).join(", ");
+        const details = [author, book.isbn].filter(Boolean).join(" • ");
+        return `<option value="${escapeHTML(book.title)}">${escapeHTML(details)}</option>`;
+      })
+      .join("");
   }
 
   function studentByCode(raw) {
@@ -3374,33 +3436,68 @@ button:disabled {
     $("#checkoutBook").disabled = false;
     $("#checkoutBookBtn").disabled = false;
     $("#checkoutBookCameraBtn").disabled = false;
+    renderCheckoutBookSuggestions();
     $("#checkoutBook").focus();
   });
 
   $("#checkoutBookForm").addEventListener("submit", async e => {
     e.preventDefault();
+
     const student = state.students.find(s => s.id === selectedStudentId);
-    const book = bookByCode($("#checkoutBook").value);
+    const raw = $("#checkoutBook").value;
+    const resolved = resolveBookEntry(raw);
+    const book = resolved.book;
 
     if (!student) {
-      $("#checkoutResult").innerHTML = `<div class="result-error">Scan a student first.</div>`;
+      $("#checkoutResult").innerHTML =
+        `<div class="result-error">Scan or select a student first.</div>`;
       return;
     }
+
     if (!book) {
-      $("#checkoutResult").innerHTML = `<div class="result-error">That book is not in the classroom library yet.</div>`;
+      if (!String(raw || "").trim()) {
+        $("#checkoutResult").innerHTML =
+          `<div class="result-error">Scan an ISBN or type a book title.</div>`;
+      } else if (resolved.matches.length > 1) {
+        const titles = resolved.matches
+          .slice(0, 6)
+          .map(b => {
+            const author = (b.authors || []).join(", ");
+            return `${escapeHTML(b.title)}${author ? ` — ${escapeHTML(author)}` : ""}`;
+          })
+          .join("<br>");
+
+        const more = resolved.matches.length > 6
+          ? `<br>and ${resolved.matches.length - 6} more…`
+          : "";
+
+        $("#checkoutResult").innerHTML =
+          `<div class="result-error">
+            <strong>More than one book matches.</strong><br>
+            <span class="muted">${titles}${more}<br>Type more of the title.</span>
+          </div>`;
+      } else {
+        $("#checkoutResult").innerHTML =
+          `<div class="result-error">That ISBN/title is not in the classroom library.</div>`;
+      }
+
       $("#checkoutBook").select();
       return;
     }
+
     if ((book.collectionStatus || "active") !== "active") {
       const status = (book.collectionStatus || "removed").replace(/^./, c => c.toUpperCase());
-      $("#checkoutResult").innerHTML = `<div class="result-error">${escapeHTML(book.title)} is marked ${escapeHTML(status)} and cannot be checked out.</div>`;
+      $("#checkoutResult").innerHTML =
+        `<div class="result-error">${escapeHTML(book.title)} is marked ${escapeHTML(status)} and cannot be checked out.</div>`;
       $("#checkoutBook").select();
       return;
     }
+
     const open = currentLoanForBook(book.id);
     if (open) {
       const borrower = state.students.find(s => s.id === open.studentId);
-      $("#checkoutResult").innerHTML = `<div class="result-error">${escapeHTML(book.title)} is already checked out${borrower ? ` to ${escapeHTML(borrower.name)}` : ""}.</div>`;
+      $("#checkoutResult").innerHTML =
+        `<div class="result-error">${escapeHTML(book.title)} is already checked out${borrower ? ` to ${escapeHTML(borrower.name)}` : ""}.</div>`;
       $("#checkoutBook").select();
       return;
     }
@@ -3417,20 +3514,25 @@ button:disabled {
     };
 
     setCloudStatus("Saving…", "syncing");
+
     try {
       const { data, error } = await db
         .from("loans")
         .insert(appLoanToDb(loan))
         .select("*")
         .single();
+
       if (error) throw error;
 
       const savedLoan = dbLoanToApp(data);
       state.loans.unshift(savedLoan);
+
       setCloudStatus("Cloud database");
       renderAll();
+
       $("#checkoutResult").innerHTML =
         `<div class="result-success">✓ ${escapeHTML(book.title)} checked out to ${escapeHTML(student.name)}. Due ${fmtDate(savedLoan.dueDate)}.</div>`;
+
       $("#checkoutBook").value = "";
       $("#checkoutBook").focus();
     } catch (err) {
@@ -4908,6 +5010,8 @@ button:disabled {
   }
 
   function renderLibrary() {
+    renderCheckoutBookSuggestions();
+
     const q = ($("#librarySearch")?.value || "").trim().toLowerCase();
     const filter = $("#libraryFilter")?.value || "all";
 
