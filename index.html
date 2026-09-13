@@ -1430,6 +1430,124 @@ button:disabled {
   background:#f9e8e6;
 }
 
+
+.book-full-editor {
+  display:grid;
+  gap:13px;
+  margin-top:14px;
+}
+.book-editor-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px;
+}
+.book-editor-grid .span-2 {
+  grid-column:1 / -1;
+}
+.book-full-editor label,
+.book-editor-grid label {
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+}
+.book-full-editor textarea,
+.book-editor-grid textarea {
+  width:100%;
+  min-height:78px;
+  resize:vertical;
+}
+.cover-editor {
+  display:grid;
+  grid-template-columns:100px minmax(0,1fr);
+  gap:14px;
+  align-items:start;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#faf7f9;
+}
+.cover-editor-preview {
+  width:100px;
+  aspect-ratio:2/3;
+  border-radius:8px;
+  overflow:hidden;
+  background:#ece8df;
+  display:grid;
+  place-items:center;
+}
+.cover-editor-preview img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.cover-editor-controls {
+  display:grid;
+  gap:8px;
+}
+.photo-upload-label {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  width:max-content;
+  max-width:100%;
+  border:1px solid #cdbdca;
+  background:#f6eef4;
+  color:var(--green);
+  border-radius:10px;
+  padding:9px 12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.photo-upload-label input {
+  display:none;
+}
+.cover-status {
+  min-height:17px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:700;
+}
+.compact-danger {
+  width:max-content;
+  border:1px solid #e1bbb7;
+  background:#fffafa;
+  color:var(--red);
+  border-radius:9px;
+  padding:7px 10px;
+  font-size:11px;
+  font-weight:900;
+}
+.book-preview.full-preview {
+  grid-template-columns:130px minmax(0,1fr);
+  align-items:start;
+}
+.book-preview.full-preview > div:first-child img,
+.book-preview.full-preview > div:first-child .cover-placeholder {
+  width:130px;
+  max-width:130px;
+}
+@media (max-width:720px) {
+  .book-editor-grid {
+    grid-template-columns:1fr;
+  }
+  .book-editor-grid .span-2 {
+    grid-column:auto;
+  }
+  .cover-editor {
+    grid-template-columns:82px minmax(0,1fr);
+  }
+  .cover-editor-preview {
+    width:82px;
+  }
+  .book-preview.full-preview {
+    grid-template-columns:1fr;
+  }
+  .book-preview.full-preview > div:first-child {
+    display:none;
+  }
+}
+
 </style>
 </head>
 <body class="logged-out">
@@ -1586,15 +1704,58 @@ button:disabled {
           <details class="manual">
             <summary>Book not found? Add it manually</summary>
             <form id="manualBookForm" class="form-stack">
-              <label>ISBN or classroom ID <input name="isbn" required /></label>
-              <label>Title <input name="title" required /></label>
-              <label>Author <input name="author" /></label>
-              <label>Reading level <input name="readingLevel" placeholder="e.g. Grade 3, 520L, Level M" /></label>
-              <label>Genres
-                <input name="genre" placeholder="e.g. Fantasy, Adventure, Humour" />
-                <span class="field-help">Separate multiple genres with commas.</span>
-              </label>
-              <label>Categories <input name="categories" placeholder="Optional extra tags" /></label>
+              <div class="book-editor-grid">
+                <label>ISBN / Book Code
+                  <input name="isbn" inputmode="numeric" required />
+                </label>
+                <label>Title
+                  <input name="title" required />
+                </label>
+                <label>Subtitle
+                  <input name="subtitle" />
+                </label>
+                <label>Author(s)
+                  <input name="author" placeholder="Separate multiple authors with commas" />
+                </label>
+                <label>Publisher
+                  <input name="publisher" />
+                </label>
+                <label>Published date
+                  <input name="publishedDate" placeholder="e.g. 2024 or 2024-09-15" />
+                </label>
+                <label>Page count
+                  <input name="pageCount" type="number" min="0" />
+                </label>
+                <label>Reading level
+                  <input name="readingLevel" placeholder="e.g. Grade 3, 520L, Level M" />
+                </label>
+                <label class="span-2">Genres
+                  <input name="genre" placeholder="e.g. Fantasy, Adventure, Humour" />
+                  <span class="field-help">Separate multiple genres with commas.</span>
+                </label>
+                <label class="span-2">Categories / Subjects
+                  <input name="categories" placeholder="Optional metadata tags" />
+                </label>
+                <label class="span-2">Description
+                  <textarea name="description" rows="4"></textarea>
+                </label>
+              </div>
+
+              <div class="cover-editor">
+                <div id="manualCoverPreview" class="cover-editor-preview">
+                  <div class="cover-placeholder">NO COVER</div>
+                </div>
+                <div class="cover-editor-controls">
+                  <strong>Cover image</strong>
+                  <label class="photo-upload-label">
+                    📷 Take / Choose Cover Photo
+                    <input id="manualCoverInput" type="file" accept="image/*" capture="environment" />
+                  </label>
+                  <button type="button" class="compact-danger" id="removeManualCoverBtn">Remove cover</button>
+                  <div id="manualCoverStatus" class="cover-status">Optional. Photos are compressed before saving.</div>
+                </div>
+              </div>
+
               <button class="secondary" type="submit">Add manual book</button>
             </form>
           </details>
@@ -1651,14 +1812,57 @@ button:disabled {
         <form id="editBookForm" class="form-stack">
           <input type="hidden" id="editBookId" />
 
-          <label>Reading level
-            <input id="editReadingLevel" placeholder="e.g. Grade 3, 520L, Level M" />
-          </label>
+          <div class="cover-editor">
+            <div id="editCoverPreview" class="cover-editor-preview">
+              <div class="cover-placeholder">NO COVER</div>
+            </div>
+            <div class="cover-editor-controls">
+              <strong>Cover image</strong>
+              <label class="photo-upload-label">
+                📷 Take / Choose Cover Photo
+                <input id="editCoverInput" type="file" accept="image/*" capture="environment" />
+              </label>
+              <button type="button" class="compact-danger" id="removeEditCoverBtn">Remove cover</button>
+              <div id="editCoverStatus" class="cover-status">Use the phone camera or choose an existing image.</div>
+            </div>
+          </div>
 
-          <label>Genres
-            <input id="editGenre" placeholder="e.g. Fantasy, Adventure, Humour" />
-            <span class="field-help">Separate multiple genres with commas.</span>
-          </label>
+          <div class="book-editor-grid">
+            <label>ISBN / Book Code
+              <input id="editIsbn" required />
+            </label>
+            <label>Title
+              <input id="editTitle" required />
+            </label>
+            <label>Subtitle
+              <input id="editSubtitle" />
+            </label>
+            <label>Author(s)
+              <input id="editAuthors" placeholder="Separate multiple authors with commas" />
+            </label>
+            <label>Publisher
+              <input id="editPublisher" />
+            </label>
+            <label>Published date
+              <input id="editPublishedDate" />
+            </label>
+            <label>Page count
+              <input id="editPageCount" type="number" min="0" />
+            </label>
+            <label>Reading level
+              <input id="editReadingLevel" placeholder="e.g. Grade 3, 520L, Level M" />
+            </label>
+            <label class="span-2">Genres
+              <input id="editGenre" placeholder="e.g. Fantasy, Adventure, Humour" />
+              <span class="field-help">Separate multiple genres with commas.</span>
+            </label>
+            <label class="span-2">Categories / Subjects
+              <input id="editCategories" />
+            </label>
+            <label class="span-2">Description
+              <textarea id="editDescription" rows="5"></textarea>
+            </label>
+          </div>
 
           <label>Collection status
             <select id="editCollectionStatus">
@@ -2084,14 +2288,14 @@ button:disabled {
   <div id="bookLabelsPrintArea" class="book-label-print-area" aria-hidden="true"></div>
 
   <footer>
-    <span><strong>Mrs. Fuller's Library • Version 28</strong></span>
+    <span><strong>Mrs. Fuller's Library • Version 29</strong></span>
   </footer>
 
 
 <script>
 (() => {
-  console.info("Mrs. Fuller's Library v28 title checkout search build loaded");
-  const BUILD_VERSION = "v28";
+  console.info("Mrs. Fuller's Library v29 full book editor and cover photos loaded");
+  const BUILD_VERSION = "v29";
   const DEFAULT_DUE_DAYS = 14;
   const SUPABASE_URL = "https://shcqhbuthlnwhivhzgxf.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_b6ryywXI1XuEKhxBrwgnlw_RNtVwb-C";
@@ -2142,6 +2346,8 @@ button:disabled {
   let cameraTargetFormId = null;
   let cameraScanKind = "isbn";
   let cameraScanLocked = false;
+  let manualCoverData = "";
+  let editCoverData = "";
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -2195,6 +2401,61 @@ button:disabled {
     return String(s ?? "").replace(/[&<>"']/g, c => ({
       "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
     }[c]));
+  }
+
+  async function compressCoverImage(file, maxWidth = 800, maxHeight = 1200, quality = 0.78) {
+    if (!file || !String(file.type || "").startsWith("image/")) {
+      throw new Error("Choose an image file.");
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("Could not read the image."));
+        image.src = objectUrl;
+      });
+
+      let width = img.naturalWidth || img.width;
+      let height = img.naturalHeight || img.height;
+
+      if (!width || !height) throw new Error("The image dimensions could not be read.");
+
+      const scale = Math.min(1, maxWidth / width, maxHeight / height);
+      width = Math.max(1, Math.round(width * scale));
+      height = Math.max(1, Math.round(height * scale));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d", { alpha: false });
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      return canvas.toDataURL("image/jpeg", quality);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  function renderCoverPreview(containerSelector, imageValue) {
+    const container = $(containerSelector);
+    if (!container) return;
+
+    container.innerHTML = imageValue
+      ? `<img src="${escapeHTML(imageValue)}" alt="Book cover">`
+      : `<div class="cover-placeholder">NO COVER</div>`;
+  }
+
+  function parseCommaList(value) {
+    return String(value || "")
+      .split(",")
+      .map(x => x.trim())
+      .filter(Boolean);
   }
 
   function currentLoanForBook(bookId) {
@@ -2819,49 +3080,161 @@ button:disabled {
       ? `<img src="${escapeHTML(book.image)}" alt="">`
       : `<div class="cover-placeholder">NO COVER</div>`;
 
-    const classificationFields = already ? "" : `
-      <div class="book-entry-fields">
-        <label>Reading level
-          <input id="newBookReadingLevel" placeholder="Grade 3, 520L, Level M…" value="${escapeHTML(book.readingLevel || "")}" />
-        </label>
-        <label>Genres
-          <input id="newBookGenre" placeholder="Fantasy, Adventure, Humour" value="${escapeHTML(mergedGenreString(book.genre || "", book.subgenre || ""))}" />
-          <span class="field-help">Separate multiple genres with commas.</span>
-        </label>
-      </div>`;
-
-    const existingMeta = already ? `
-      <div class="book-meta-tags">
-        ${book.readingLevel ? `<span class="meta-tag">Level: ${escapeHTML(book.readingLevel)}</span>` : ""}
-        ${bookGenres(book).map(g => `<span class="meta-tag">${escapeHTML(g)}</span>`).join("")}
-      </div>
-      <div class="book-card-actions">
-        <button id="manageExistingBook" class="secondary" type="button">Manage book</button>
-      </div>` : "";
-
-    $("#bookPreview").innerHTML = `
-      <div class="book-preview">
-        <div>${img}</div>
-        <div>
-          <div class="eyebrow">${already ? "ALREADY IN LIBRARY" : "BOOK FOUND"}</div>
-          <h3>${escapeHTML(book.title)}</h3>
-          <div>${escapeHTML((book.authors || []).join(", ") || "Unknown author")}</div>
-          <div class="meta">${escapeHTML(book.isbn)} ${book.pageCount ? ` • ${book.pageCount} pages` : ""}</div>
-          ${classificationFields}
-          ${already ? existingMeta : `<button id="confirmAddBook" class="primary">Add to library</button>`}
-        </div>
-      </div>
-    `;
-
     if (already) {
+      $("#bookPreview").innerHTML = `
+        <div class="book-preview">
+          <div>${img}</div>
+          <div>
+            <div class="eyebrow">ALREADY IN LIBRARY</div>
+            <h3>${escapeHTML(book.title)}</h3>
+            <div>${escapeHTML((book.authors || []).join(", ") || "Unknown author")}</div>
+            <div class="meta">${escapeHTML(book.isbn)}</div>
+            <div class="book-meta-tags">
+              ${book.readingLevel ? `<span class="meta-tag">Level: ${escapeHTML(book.readingLevel)}</span>` : ""}
+              ${bookGenres(book).map(g => `<span class="meta-tag">${escapeHTML(g)}</span>`).join("")}
+            </div>
+            <div class="book-card-actions">
+              <button id="manageExistingBook" class="secondary" type="button">Manage book</button>
+            </div>
+          </div>
+        </div>
+      `;
       $("#manageExistingBook").onclick = () => openBookEditor(book.id);
       return;
     }
 
+    let draftCover = book.image || "";
+
+    $("#bookPreview").innerHTML = `
+      <div class="book-preview full-preview">
+        <div id="lookupCoverSide">${img}</div>
+        <div>
+          <div class="eyebrow">BOOK FOUND — REVIEW BEFORE ADDING</div>
+
+          <div class="cover-editor">
+            <div id="lookupCoverPreview" class="cover-editor-preview">
+              ${draftCover ? `<img src="${escapeHTML(draftCover)}" alt="Book cover">` : `<div class="cover-placeholder">NO COVER</div>`}
+            </div>
+            <div class="cover-editor-controls">
+              <strong>Cover image</strong>
+              <label class="photo-upload-label">
+                📷 Take / Choose Cover Photo
+                <input id="lookupCoverInput" type="file" accept="image/*" capture="environment" />
+              </label>
+              <button type="button" class="compact-danger" id="removeLookupCoverBtn">Remove cover</button>
+              <div id="lookupCoverStatus" class="cover-status">Replace an incorrect/missing cover before adding.</div>
+            </div>
+          </div>
+
+          <div class="book-full-editor">
+            <div class="book-editor-grid">
+              <label>ISBN / Book Code
+                <input id="newBookIsbn" value="${escapeHTML(book.isbn || "")}" required />
+              </label>
+              <label>Title
+                <input id="newBookTitle" value="${escapeHTML(book.title || "")}" required />
+              </label>
+              <label>Subtitle
+                <input id="newBookSubtitle" value="${escapeHTML(book.subtitle || "")}" />
+              </label>
+              <label>Author(s)
+                <input id="newBookAuthors" value="${escapeHTML((book.authors || []).join(", "))}" placeholder="Separate multiple authors with commas" />
+              </label>
+              <label>Publisher
+                <input id="newBookPublisher" value="${escapeHTML(book.publisher || "")}" />
+              </label>
+              <label>Published date
+                <input id="newBookPublishedDate" value="${escapeHTML(book.publishedDate || "")}" />
+              </label>
+              <label>Page count
+                <input id="newBookPageCount" type="number" min="0" value="${book.pageCount ?? ""}" />
+              </label>
+              <label>Reading level
+                <input id="newBookReadingLevel" placeholder="Grade 3, 520L, Level M…" value="${escapeHTML(book.readingLevel || "")}" />
+              </label>
+              <label class="span-2">Genres
+                <input id="newBookGenre" placeholder="Fantasy, Adventure, Humour" value="${escapeHTML(mergedGenreString(book.genre || "", book.subgenre || ""))}" />
+                <span class="field-help">Separate multiple genres with commas.</span>
+              </label>
+              <label class="span-2">Categories / Subjects
+                <input id="newBookCategories" value="${escapeHTML((book.categories || []).join(", "))}" />
+              </label>
+              <label class="span-2">Description
+                <textarea id="newBookDescription" rows="4">${escapeHTML(book.description || "")}</textarea>
+              </label>
+            </div>
+
+            <button id="confirmAddBook" class="primary" type="button">Add to library</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    $("#lookupCoverInput").addEventListener("change", async event => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const status = $("#lookupCoverStatus");
+      status.textContent = "Preparing photo…";
+
+      try {
+        draftCover = await compressCoverImage(file);
+        renderCoverPreview("#lookupCoverPreview", draftCover);
+        status.textContent = "Custom cover photo ready.";
+      } catch (err) {
+        status.textContent = err.message || "Could not use that photo.";
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    $("#removeLookupCoverBtn").addEventListener("click", () => {
+      draftCover = "";
+      renderCoverPreview("#lookupCoverPreview", "");
+      $("#lookupCoverStatus").textContent = "Cover removed.";
+    });
+
     $("#confirmAddBook").onclick = async () => {
+      const editedIsbn = normalizeISBN($("#newBookIsbn").value);
+      const editedTitle = $("#newBookTitle").value.trim();
+
+      if (!editedIsbn) {
+        toast("Enter an ISBN or book code.");
+        $("#newBookIsbn").focus();
+        return;
+      }
+
+      if (!editedTitle) {
+        toast("Enter a book title.");
+        $("#newBookTitle").focus();
+        return;
+      }
+
+      const duplicate = bookByCode(editedIsbn);
+      if (duplicate) {
+        toast(`That ISBN/code is already used by ${duplicate.title}.`);
+        return;
+      }
+
+      book.isbn = editedIsbn;
+      book.scannedIsbn = editedIsbn;
+      book.title = editedTitle;
+      book.subtitle = $("#newBookSubtitle").value.trim();
+      book.authors = parseCommaList($("#newBookAuthors").value);
+      book.publisher = $("#newBookPublisher").value.trim();
+      book.publishedDate = $("#newBookPublishedDate").value.trim();
+
+      const pages = Number($("#newBookPageCount").value);
+      book.pageCount = Number.isFinite(pages) && pages >= 0 && $("#newBookPageCount").value !== ""
+        ? Math.round(pages)
+        : null;
+
       book.readingLevel = $("#newBookReadingLevel").value.trim();
       book.genre = splitGenres($("#newBookGenre").value).join(", ");
       book.subgenre = "";
+      book.categories = parseCommaList($("#newBookCategories").value);
+      book.description = $("#newBookDescription").value.trim();
+      book.image = draftCover;
       book.collectionStatus = "active";
       book.removalReason = "";
 
@@ -2876,18 +3249,20 @@ button:disabled {
           .insert(appBookToDb(book))
           .select("*")
           .single();
+
         if (error) throw error;
 
         const savedBook = dbBookToApp(data);
         state.books.unshift(savedBook);
         recentIds.unshift(savedBook.id);
         recentIds = recentIds.slice(0, 20);
-        renderAll();
 
+        renderAll();
         $("#bookPreview").innerHTML = "";
         $("#lookupStatus").textContent = `✓ Added: ${savedBook.title}`;
         $("#scanIsbn").value = "";
         $("#scanIsbn").focus();
+
         setCloudStatus("Cloud database");
         toast("Book added");
       } catch (err) {
@@ -2934,29 +3309,62 @@ button:disabled {
     }
   });
 
+  $("#manualCoverInput").addEventListener("change", async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    $("#manualCoverStatus").textContent = "Preparing photo…";
+
+    try {
+      manualCoverData = await compressCoverImage(file);
+      renderCoverPreview("#manualCoverPreview", manualCoverData);
+      $("#manualCoverStatus").textContent = "Custom cover photo ready.";
+    } catch (err) {
+      $("#manualCoverStatus").textContent = err.message || "Could not use that photo.";
+    } finally {
+      event.target.value = "";
+    }
+  });
+
+  $("#removeManualCoverBtn").addEventListener("click", () => {
+    manualCoverData = "";
+    renderCoverPreview("#manualCoverPreview", "");
+    $("#manualCoverStatus").textContent = "Cover removed.";
+  });
+
   $("#manualBookForm").addEventListener("submit", async e => {
     e.preventDefault();
+
     const fd = new FormData(e.currentTarget);
     const isbn = normalizeISBN(fd.get("isbn"));
-    if (bookByCode(isbn)) {
-      toast("That book is already in the library.");
+
+    if (!isbn) {
+      toast("Enter an ISBN or book code.");
       return;
     }
+
+    if (bookByCode(isbn)) {
+      toast("That book code is already in the library.");
+      return;
+    }
+
+    const pagesRaw = String(fd.get("pageCount") || "").trim();
+    const pages = Number(pagesRaw);
 
     const book = {
       id: null,
       isbn,
       scannedIsbn: isbn,
       openLibraryKey: null,
-      title: String(fd.get("title")).trim(),
-      subtitle: "",
-      authors: String(fd.get("author") || "").split(",").map(x => x.trim()).filter(Boolean),
-      publisher: "",
-      publishedDate: "",
-      description: "",
-      pageCount: null,
-      categories: String(fd.get("categories") || "").split(",").map(x => x.trim()).filter(Boolean),
-      image: "",
+      title: String(fd.get("title") || "").trim(),
+      subtitle: String(fd.get("subtitle") || "").trim(),
+      authors: parseCommaList(fd.get("author")),
+      publisher: String(fd.get("publisher") || "").trim(),
+      publishedDate: String(fd.get("publishedDate") || "").trim(),
+      description: String(fd.get("description") || "").trim(),
+      pageCount: pagesRaw && Number.isFinite(pages) && pages >= 0 ? Math.round(pages) : null,
+      categories: parseCommaList(fd.get("categories")),
+      image: manualCoverData || "",
       readingLevel: String(fd.get("readingLevel") || "").trim(),
       genre: splitGenres(String(fd.get("genre") || "")).join(", "),
       subgenre: "",
@@ -2965,17 +3373,34 @@ button:disabled {
       dateAdded: todayISO()
     };
 
+    if (!book.title) {
+      toast("Enter a book title.");
+      return;
+    }
+
     const submit = e.currentTarget.querySelector('button[type="submit"]');
     submit.disabled = true;
     setCloudStatus("Saving…", "syncing");
+
     try {
-      const { data, error } = await db.from("books").insert(appBookToDb(book)).select("*").single();
+      const { data, error } = await db
+        .from("books")
+        .insert(appBookToDb(book))
+        .select("*")
+        .single();
+
       if (error) throw error;
+
       const savedBook = dbBookToApp(data);
       state.books.unshift(savedBook);
       recentIds.unshift(savedBook.id);
       recentIds = recentIds.slice(0, 20);
+
       e.currentTarget.reset();
+      manualCoverData = "";
+      renderCoverPreview("#manualCoverPreview", "");
+      $("#manualCoverStatus").textContent = "Optional. Photos are compressed before saving.";
+
       setCloudStatus("Cloud database");
       renderAll();
       toast("Manual book added");
@@ -3001,22 +3426,66 @@ button:disabled {
 
     $("#editBookId").value = book.id;
     $("#editBookTitle").textContent = book.title;
+
+    $("#editIsbn").value = book.isbn || "";
+    $("#editTitle").value = book.title || "";
+    $("#editSubtitle").value = book.subtitle || "";
+    $("#editAuthors").value = (book.authors || []).join(", ");
+    $("#editPublisher").value = book.publisher || "";
+    $("#editPublishedDate").value = book.publishedDate || "";
+    $("#editPageCount").value = book.pageCount ?? "";
     $("#editReadingLevel").value = book.readingLevel || "";
     $("#editGenre").value = bookGenres(book).join(", ");
+    $("#editCategories").value = (book.categories || []).join(", ");
+    $("#editDescription").value = book.description || "";
+
     $("#editCollectionStatus").value = book.collectionStatus || "active";
     $("#editRemovalReason").value = book.removalReason || "";
+
+    editCoverData = book.image || "";
+    renderCoverPreview("#editCoverPreview", editCoverData);
+    $("#editCoverStatus").textContent = editCoverData
+      ? "Current cover. Take or choose a photo to replace it."
+      : "No cover. Take or choose a photo to add one.";
+
     updateRemovalReasonVisibility();
     $("#bookEditDialog").showModal();
   }
 
   function updateRemovalReasonVisibility() {
     const status = $("#editCollectionStatus").value;
-    $("#removalReasonLabel").classList.toggle("hidden", !["lost","damaged","removed"].includes(status));
+    $("#removalReasonLabel").classList.toggle(
+      "hidden",
+      !["lost","damaged","removed"].includes(status)
+    );
   }
 
   function closeBookEditor() {
     $("#bookEditDialog").close();
   }
+
+  $("#editCoverInput").addEventListener("change", async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    $("#editCoverStatus").textContent = "Preparing photo…";
+
+    try {
+      editCoverData = await compressCoverImage(file);
+      renderCoverPreview("#editCoverPreview", editCoverData);
+      $("#editCoverStatus").textContent = "New cover photo ready. Save changes to keep it.";
+    } catch (err) {
+      $("#editCoverStatus").textContent = err.message || "Could not use that photo.";
+    } finally {
+      event.target.value = "";
+    }
+  });
+
+  $("#removeEditCoverBtn").addEventListener("click", () => {
+    editCoverData = "";
+    renderCoverPreview("#editCoverPreview", "");
+    $("#editCoverStatus").textContent = "Cover will be removed when you save changes.";
+  });
 
   $("#editCollectionStatus").addEventListener("change", updateRemovalReasonVisibility);
   $("#closeBookDialog").addEventListener("click", closeBookEditor);
@@ -3024,10 +3493,53 @@ button:disabled {
 
   $("#editBookForm").addEventListener("submit", async e => {
     e.preventDefault();
+
     const book = state.books.find(b => b.id === $("#editBookId").value);
     if (!book) return;
 
+    const isbn = normalizeISBN($("#editIsbn").value);
+    const title = $("#editTitle").value.trim();
+
+    if (!isbn) {
+      toast("Enter an ISBN or book code.");
+      $("#editIsbn").focus();
+      return;
+    }
+
+    if (!title) {
+      toast("Enter a title.");
+      $("#editTitle").focus();
+      return;
+    }
+
+    const duplicate = state.books.find(b =>
+      b.id !== book.id &&
+      (
+        normalizeISBN(b.isbn) === isbn ||
+        normalizeISBN(b.scannedIsbn) === isbn
+      )
+    );
+
+    if (duplicate) {
+      toast(`That ISBN/code is already used by ${duplicate.title}.`);
+      return;
+    }
+
+    const pagesRaw = $("#editPageCount").value.trim();
+    const pages = Number(pagesRaw);
+
     const changes = {
+      isbn,
+      scanned_isbn: isbn,
+      title,
+      subtitle: $("#editSubtitle").value.trim(),
+      authors: parseCommaList($("#editAuthors").value),
+      publisher: $("#editPublisher").value.trim(),
+      published_date: $("#editPublishedDate").value.trim(),
+      description: $("#editDescription").value.trim(),
+      page_count: pagesRaw && Number.isFinite(pages) && pages >= 0 ? Math.round(pages) : null,
+      categories: parseCommaList($("#editCategories").value),
+      image_url: editCoverData || "",
       reading_level: $("#editReadingLevel").value.trim(),
       genre: splitGenres($("#editGenre").value).join(", "),
       subgenre: "",
@@ -3036,6 +3548,7 @@ button:disabled {
     };
 
     setCloudStatus("Saving…", "syncing");
+
     try {
       const { data, error } = await db
         .from("books")
@@ -3043,10 +3556,12 @@ button:disabled {
         .eq("id", book.id)
         .select("*")
         .single();
+
       if (error) throw error;
 
       const index = state.books.findIndex(b => b.id === book.id);
       state.books[index] = dbBookToApp(data);
+
       setCloudStatus("Cloud database");
       renderAll();
       closeBookEditor();
@@ -5059,7 +5574,7 @@ button:disabled {
           ${ratingBadge(b.id)}
           ${removedNote}
           <div class="book-card-actions">
-            <button class="small-btn" type="button" onclick="openBookEditor('${b.id}')">Edit / Manage</button>
+            <button class="small-btn" type="button" onclick="openBookEditor('${b.id}')">Manage / Edit</button>
           </div>
         </div>
       </article>`;
